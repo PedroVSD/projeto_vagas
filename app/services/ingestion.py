@@ -80,7 +80,14 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                     from app.services.score_service import score_and_persist
 
                     db.flush()
-                    score_and_persist(db, existing)
+                    score = score_and_persist(db, existing)
+                    # Fase 4: notificação se atingir threshold
+                    try:
+                        from app.notifications.service import notify_job
+
+                        notify_job(db, existing, {"final_score": score.final_score, "classification": score.classification, "area_breakdown": score.area_breakdown, "penalties": score.penalties})
+                    except Exception as ne:
+                        logger.warning("Notificação falhou job %s: %s", existing.id, ne)
                 except Exception as se:
                     logger.warning("Scoring falhou para job %s: %s", existing.id, se)
                 duplicates += 1
@@ -105,7 +112,14 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                 try:
                     from app.services.score_service import score_and_persist
 
-                    score_and_persist(db, job)
+                    score = score_and_persist(db, job)
+                    # Fase 4: notificação
+                    try:
+                        from app.notifications.service import notify_job
+
+                        notify_job(db, job, {"final_score": score.final_score, "classification": score.classification, "area_breakdown": score.area_breakdown, "penalties": score.penalties})
+                    except Exception as ne:
+                        logger.warning("Notificação falhou novo job %s: %s", norm.title, ne)
                 except Exception as se:
                     logger.warning("Scoring falhou para novo job %s: %s", norm.title, se)
                 new += 1
