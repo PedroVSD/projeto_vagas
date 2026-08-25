@@ -39,7 +39,7 @@ services:
     command: >
       bash -c "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
-  # Fase 5 - worker/scheduler (placeholder, mesmo imagem da api)
+  # Fase 5 - Worker/Scheduler APScheduler (monólito modular)
   worker:
     build: .
     restart: unless-stopped
@@ -48,13 +48,40 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/job_finder
+      SCHEDULER_ENABLED: "true"
+      SCHEDULER_INTERVAL_MINUTES: "60"
+      DIGEST_ENABLED: "true"
+      DIGEST_TIME: "08:00"
     env_file:
       - .env
     volumes:
       - ./app:/app/app
+      - ./config:/app/config
+      - ./migrations:/app/migrations
+      - ./alembic.ini:/app/alembic.ini
     command: >
-      bash -c "echo 'worker placeholder - Fase 5 (APScheduler/Celery)' && tail -f /dev/null"
+      bash -c "uv run alembic upgrade head && uv run python -m app.workers.scheduler"
     profiles: ["worker"]
+
+  # Alias scheduler (mesma imagem, mesmo comando) - permite docker compose --profile scheduler up
+  scheduler:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/job_finder
+      SCHEDULER_ENABLED: "true"
+      SCHEDULER_INTERVAL_MINUTES: "60"
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app/app
+      - ./config:/app/config
+    command: >
+      bash -c "uv run python -m app.workers.scheduler"
+    profiles: ["scheduler"]
 
   redis:
     image: redis:7-alpine

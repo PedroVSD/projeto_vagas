@@ -7,6 +7,7 @@ from app.api.routes.health import router as health_router
 from app.api.routes.jobs import router as jobs_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.sources import router as sources_router
+from app.api.routes.worker import router as worker_router
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 
@@ -32,6 +33,7 @@ app.include_router(health_router)
 app.include_router(jobs_router)
 app.include_router(sources_router)
 app.include_router(notifications_router)
+app.include_router(worker_router)
 
 
 @app.get("/", tags=["root"])

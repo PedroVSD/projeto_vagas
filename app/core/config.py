@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     digest_enabled: bool = Field(default=True)
     digest_time: str = Field(default="08:00")
 
+    # Scheduler (Fase 5) - APScheduler simples, monólito modular
+    scheduler_enabled: bool = Field(default=True)
+    scheduler_interval_minutes: int = Field(default=60, ge=1, description="Intervalo coleta em minutos")
+    scheduler_collect_on_start: bool = Field(default=False, description="Executa coleta ao iniciar")
+
 
 @lru_cache
 def get_settings() -> Settings:

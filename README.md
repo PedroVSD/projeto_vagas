@@ -421,7 +421,7 @@ Cobertura para: normalização, deduplicação, scoring, filtros, classificaçã
 | **2** | Sistema de fontes (`JobSource`), 1ª fonte legítima (Arbeitnow API), normalização, deduplicação (fingerprint) | ✅ Concluída |
 | **3** | Sistema de queries configurável (`config/search_queries.yaml` 21 queries), filtros, scoring heurístico 0-100 (senioridade/área/modalidade/techs + penalidades + cap) | ✅ Concluída |
 | **4** | Notificações Telegram + Email (adapter `NotificationProvider.send()`, `TelegramProvider`, `EmailProvider`, `format_job_message()`, thresholds 60 digest / 90 imediato, digest diário) | ✅ Concluída |
-| **5** | Scheduler/worker (APScheduler), execução automática | Planejado |
+| **5** | Scheduler/worker (APScheduler monólito modular, `app/workers/runner.py` pipeline, `app/workers/scheduler.py` coleta 60min + digest 08:00, `docker compose --profile worker up`, `POST /worker/run` manual) — justificado vs Celery (MVP sem broker) | ✅ Concluída |
 | **6** | LLM para classificação avançada (pós-filtro, JSON validado) — Ollama local + Cloud free tier (`https://ollama.com`) já implementado em `app/scoring/llm.py:88-274` | ✅ Base implementada (integrado Fase 3) |
 | **7** | Observabilidade, testes, Docker, documentação, deploy | Planejado |
 
