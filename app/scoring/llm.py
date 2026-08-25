@@ -86,12 +86,18 @@ class BaseLLMProvider(ABC):
 
 
 class OllamaProvider(BaseLLMProvider):
-    """Provider Ollama - 100% local, sem custo, compatível com qualquer modelo llama3, mistral, qwen, etc."""
+    """Provider Ollama - local (sem custo) ou cloud (https://ollama.com, free tier).
 
-    def __init__(self, base_url: str, model: str, timeout: int = 60):
+    Gratuito: local roda 100% offline; cloud usa free tier em https://ollama.com (light usage,
+    modelos *-cloud como gpt-oss:20b-cloud). Basta setar OLLAMA_BASE_URL=https://ollama.com
+    e OLLAMA_API_KEY.
+    """
+
+    def __init__(self, base_url: str, model: str, timeout: int = 60, api_key: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        self.api_key = api_key
 
     def is_enabled(self) -> bool:
         return bool(self.base_url and self.model)
@@ -128,9 +134,12 @@ class OllamaProvider(BaseLLMProvider):
         return None
 
     def _call(self, url: str, payload: dict) -> LLMClassification | None:
+        headers: dict[str, str] = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         # Adapta payload entre formato OpenAI e Ollama nativo (são quase idênticos para chat)
         with httpx.Client(timeout=self.timeout) as client:
-            r = client.post(url, json=payload)
+            r = client.post(url, json=payload, headers=headers or None)
             r.raise_for_status()
             data = r.json()
 
@@ -150,8 +159,12 @@ class OllamaProvider(BaseLLMProvider):
 
     def health_check(self) -> bool:
         try:
+            headers: dict[str, str] = {}
+            if self.api_key:
+                headers["Authorization"] = f"Bearer {self.api_key}"
+            # Cloud usa https://ollama.com/api/tags (mesmo endpoint)
             with httpx.Client(timeout=5) as client:
-                r = client.get(f"{self.base_url}/api/tags")
+                r = client.get(f"{self.base_url}/api/tags", headers=headers or None)
                 return r.status_code == 200
         except Exception:
             return False
@@ -249,7 +262,12 @@ def get_llm_provider() -> BaseLLMProvider:
         return DisabledProvider()
 
     if provider == "ollama":
-        return OllamaProvider(settings.ollama_base_url, settings.ollama_model, settings.ollama_timeout)
+        return OllamaProvider(
+            settings.ollama_base_url,
+            settings.ollama_model,
+            settings.ollama_timeout,
+            settings.ollama_api_key,
+        )
 
     if provider == "openai":
         if not settings.openai_api_key:
@@ -259,8 +277,13 @@ def get_llm_provider() -> BaseLLMProvider:
 
     # auto
     if provider == "auto":
-        # Prefere Ollama se health check ok, senão OpenAI
-        ollama = OllamaProvider(settings.ollama_base_url, settings.ollama_model, settings.ollama_timeout)
+        # Prefere Ollama (local ou cloud https://ollama.com) se health check ok, senão OpenAI
+        ollama = OllamaProvider(
+            settings.ollama_base_url,
+            settings.ollama_model,
+            settings.ollama_timeout,
+            settings.ollama_api_key,
+        )
         if ollama.health_check():
             logger.info("LLM auto: usando Ollama %s @ %s", settings.ollama_model, settings.ollama_base_url)
             return ollama

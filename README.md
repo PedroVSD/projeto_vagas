@@ -99,7 +99,7 @@ Monólito modular (evolui para serviços separados apenas quando houver necessid
 | **Scheduler** | APScheduler (Fase 1-5) → Celery+Redis se escalar | APScheduler é mais simples para MVP/monólito; Celery quando precisar de workers distribuídos e retry robusto |
 | **Fila** | In-process / APScheduler → Redis + Celery | Evitar complexidade prematura |
 | **Container** | Docker + Docker Compose | Reprodutibilidade local com `docker compose up` |
-| **LLM** | OpenAI API (ou compatível) com JSON schema validado | Custo controlado: só após filtro heurístico, vagas candidatas (score >= threshold) |
+| **LLM** | Ollama (local grátis ou Cloud free tier via https://ollama.com) + OpenAI opcional, JSON schema validado | Custo controlado: Ollama local 100% grátis/offline, Ollama Cloud free tier (light usage, modelos `*-cloud` sem GPU local), só após filtro heurístico (score >= threshold) |
 | **Notificações** | Adapter pattern (`NotificationProvider.send()`) | Desacoplamento: Email/Telegram agora, WhatsApp/Discord/Slack futuros sem alterar negócio |
 | **Coleta** | Adapter pattern (`JobSource.fetch_jobs() / normalize_job()`) | Fontes plugáveis sem tocar pipeline |
 
@@ -298,12 +298,29 @@ Todas as configurações via variáveis de ambiente ou `config/*.yaml`. Nunca co
 | `TELEGRAM_BOT_TOKEN` | Token do bot |
 | `TELEGRAM_CHAT_ID` | Chat destino |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` | Email |
-| `OPENAI_API_KEY` | LLM (opcional) |
+| `OPENAI_API_KEY` | LLM OpenAI (opcional) |
+| `OLLAMA_BASE_URL` | Ollama host: `http://localhost:11434` (local), `http://ollama:11434` (Docker), `https://ollama.com` (Cloud gratuito) |
+| `OLLAMA_MODEL` | Local: `llama3.1:8b`, `qwen2.5:7b` · Cloud free: `gpt-oss:20b-cloud`, `qwen3-coder:480b-cloud`, `deepseek-v3.1:671b-cloud` |
+| `OLLAMA_API_KEY` | API key Ollama Cloud — crie em https://ollama.com/settings/keys (necessário só para Cloud) |
+| `LLM_PROVIDER` | `auto` (tenta Ollama → OpenAI → disabled), `ollama`, `openai`, `disabled` |
 | `SCORE_THRESHOLD` | Default 60 |
 | `DIGEST_TIME` | Default 08:00 |
 | `LOG_LEVEL` | `INFO` / `DEBUG` |
 
 Veja `.env.example` para lista completa.
+
+### Ollama — Local grátis vs Cloud gratuito
+
+**Possibilidade confirmada: sim, há opção cloud gratuita.**
+
+| Modo | Custo | Como usar | Quando usar |
+|---|---|---|---|
+| **Local** | 100% grátis, offline | `OLLAMA_BASE_URL=http://localhost:11434` + `docker compose --profile ollama up -d` + `docker exec ollama ollama pull llama3.1:8b` | Sem dependência de internet, privacidade total, sem limite de uso. Requer RAM/VRAM local. |
+| **Cloud Free Tier** | Grátis (light usage) | `OLLAMA_BASE_URL=https://ollama.com` + `OLLAMA_API_KEY=sua_key` + `OLLAMA_MODEL=gpt-oss:20b-cloud` — crie conta em https://ollama.com e key em https://ollama.com/settings/keys | Sem GPU local. Free tier inclui quota base (reset a cada 5h/semana), modelos leves–médios (`*-cloud`), concorrência limitada. Suficiente para Fase 6 (classificação pós-filtro, poucas vagas/dia). Ilimitado local não consome quota. |
+
+Ambos usam mesma API (`/api/chat` e OpenAI-compat `/v1/chat/completions`) — o código em `app/scoring/llm.py:88-157` já suporta local e cloud via `OLLAMA_BASE_URL` + `OLLAMA_API_KEY` (header `Authorization: Bearer`). `LLM_PROVIDER=auto` prefere Ollama (local ou cloud) se `health_check()` ok, senão OpenAI.
+
+**Recomendação para este projeto (baixo custo):** comece com Ollama Cloud free (`gpt-oss:20b-cloud`) para validar Fase 6 sem instalar nada local; se atingir quota, mude para local `llama3.1:8b` ou mantenha cloud com modelos nível 1-2 (consomem menos). Só o LLM classifica vagas candidatas (`score >= threshold`), então custo/uso é mínimo.
 
 ---
 
@@ -321,6 +338,28 @@ docker compose up --build
 ```
 
 Serviços: `api`, `db` (PostgreSQL), `worker`, `scheduler` (+ `redis` se habilitado).
+
+#### Ollama Local (opcional, 100% grátis)
+
+```bash
+docker compose --profile ollama up -d
+docker exec projeto_vagas-ollama-1 ollama pull llama3.1:8b
+# .env: OLLAMA_BASE_URL=http://ollama:11434  OLLAMA_MODEL=llama3.1:8b  LLM_PROVIDER=ollama
+```
+
+#### Ollama Cloud Gratuito (sem GPU local)
+
+```bash
+# 1. Crie conta em https://ollama.com e gere API key em https://ollama.com/settings/keys
+# 2. Configure .env:
+# OLLAMA_BASE_URL=https://ollama.com
+# OLLAMA_API_KEY=ollama_xxxxx
+# OLLAMA_MODEL=gpt-oss:20b-cloud  # ou qwen3-coder:480b-cloud
+# LLM_PROVIDER=ollama  # ou auto
+
+curl https://ollama.com/api/tags -H "Authorization: Bearer $OLLAMA_API_KEY" # testa cloud
+# Sem Docker Ollama necessário — a API classifica direto na nuvem free tier
+```
 
 ### Sem Docker (desenvolvimento)
 
@@ -376,12 +415,12 @@ Cobertura para: normalização, deduplicação, scoring, filtros, classificaçã
 
 | Fase | Entregas | Status |
 |---|---|---|
-| **1** | FastAPI + PostgreSQL + SQLAlchemy + Alembic + modelo Job + config `pydantic-settings` | Planejado |
-| **2** | Sistema de fontes (`JobSource`), 1ª fonte legítima, normalização, deduplicação (fingerprint) | Planejado |
+| **1** | FastAPI + PostgreSQL + SQLAlchemy + Alembic + modelo Job + config `pydantic-settings` | ✅ Concluída |
+| **2** | Sistema de fontes (`JobSource`), 1ª fonte legítima, normalização, deduplicação (fingerprint) | 🚧 Em progresso |
 | **3** | Sistema de queries configurável, filtros, scoring heurístico 0-100 | Planejado |
 | **4** | Notificações Telegram + Email (adapter) | Planejado |
 | **5** | Scheduler/worker (APScheduler), execução automática | Planejado |
-| **6** | LLM para classificação avançada (pós-filtro, JSON validado) | Planejado |
+| **6** | LLM para classificação avançada (pós-filtro, JSON validado) — Ollama local + Cloud free tier (`https://ollama.com`) já implementado em `app/scoring/llm.py:88-274` | ✅ Base implementada (aguarda integração Fase 3) |
 | **7** | Observabilidade, testes, Docker, documentação, deploy | Planejado |
 
 Cada fase mantém o sistema funcional (MVP incremental).

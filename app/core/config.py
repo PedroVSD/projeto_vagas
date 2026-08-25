@@ -47,9 +47,12 @@ class Settings(BaseSettings):
     llm_provider: str = Field(default="auto", description="ollama, openai, auto, disabled")
     llm_enabled: bool = Field(default=True)
 
-    # Ollama
+    # Ollama - local (http://localhost:11434) ou cloud (https://ollama.com)
+    # Cloud gratuito: crie conta em https://ollama.com, gere API key em https://ollama.com/settings/keys
+    # e use OLLAMA_BASE_URL=https://ollama.com + OLLAMA_API_KEY + modelo cloud (ex: gpt-oss:20b-cloud, qwen3-coder:480b-cloud)
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="llama3.1:8b")
+    ollama_api_key: str | None = Field(default=None, description="API key para Ollama Cloud (https://ollama.com)")
     ollama_timeout: int = Field(default=60)
 
     # OpenAI
