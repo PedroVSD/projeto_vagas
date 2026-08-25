@@ -75,6 +75,14 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                     existing.description = norm.description
                 if norm.technologies:
                     existing.technologies = norm.technologies
+                # re-score ao atualizar
+                try:
+                    from app.services.score_service import score_and_persist
+
+                    db.flush()
+                    score_and_persist(db, existing)
+                except Exception as se:
+                    logger.warning("Scoring falhou para job %s: %s", existing.id, se)
                 duplicates += 1
                 updated += 1
             else:
@@ -92,6 +100,14 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                     raw_payload=norm.raw_payload,
                 )
                 db.add(job)
+                db.flush()
+                # Fase 3: scoring heurístico imediato
+                try:
+                    from app.services.score_service import score_and_persist
+
+                    score_and_persist(db, job)
+                except Exception as se:
+                    logger.warning("Scoring falhou para novo job %s: %s", norm.title, se)
                 new += 1
         except Exception as e:
             logger.exception("Erro ao ingerir job %s: %s", raw.url if raw else "?", e)

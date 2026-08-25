@@ -42,17 +42,28 @@ def ingest_one(source_name: str, db: Session = Depends(get_db)):
     return result
 
 
-@router.get("/preview/{source_name}", summary="Preview normalizado sem persistir (útil para testar)")
+@router.get("/preview/{source_name}", summary="Preview normalizado + scoring sem persistir")
 def preview(source_name: str):
+    from app.scoring.heuristic import score_job
+
     src = get_source_by_name(source_name)
     if not src:
         return {"error": f"fonte '{source_name}' não encontrada"}
     raws = src.fetch_jobs()
     norms = [src.normalize_job(r) for r in raws[:5]]
-    return {
-        "source": source_name,
-        "collected": len(raws),
-        "preview": [
+    preview_list = []
+    for n in norms:
+        s = score_job(
+            {
+                "title": n.title,
+                "description": n.description,
+                "location": n.location,
+                "modality": n.modality,
+                "seniority": n.seniority,
+                "technologies": n.technologies,
+            }
+        )
+        preview_list.append(
             {
                 "title": n.title,
                 "company": n.company_name,
@@ -62,7 +73,16 @@ def preview(source_name: str):
                 "seniority": n.seniority,
                 "technologies": n.technologies,
                 "fingerprint": n.fingerprint[:16] + "..." if n.fingerprint else None,
+                "score": s["final_score"],
+                "classification": s["classification"],
+                "breakdown": s["breakdown"],
             }
-            for n in norms
-        ],
-    }
+        )
+    return {"source": source_name, "collected": len(raws), "preview": preview_list}
+
+
+@router.get("/queries", summary="Lista queries configuráveis (Fase 3)")
+def list_queries():
+    from app.services.query_service import get_all_queries
+
+    return {"total": len(get_all_queries()), "queries": get_all_queries()}

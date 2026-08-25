@@ -416,8 +416,8 @@ Cobertura para: normalização, deduplicação, scoring, filtros, classificaçã
 | Fase | Entregas | Status |
 |---|---|---|
 | **1** | FastAPI + PostgreSQL + SQLAlchemy + Alembic + modelo Job + config `pydantic-settings` | ✅ Concluída |
-| **2** | Sistema de fontes (`JobSource`), 1ª fonte legítima, normalização, deduplicação (fingerprint) | 🚧 Em progresso |
-| **3** | Sistema de queries configurável, filtros, scoring heurístico 0-100 | Planejado |
+| **2** | Sistema de fontes (`JobSource`), 1ª fonte legítima (Arbeitnow API), normalização, deduplicação (fingerprint) | ✅ Concluída |
+| **3** | Sistema de queries configurável (`config/search_queries.yaml` 21 queries), filtros, scoring heurístico 0-100 (senioridade/área/modalidade/techs + penalidades + cap) | ✅ Concluída |
 | **4** | Notificações Telegram + Email (adapter) | Planejado |
 | **5** | Scheduler/worker (APScheduler), execução automática | Planejado |
 | **6** | LLM para classificação avançada (pós-filtro, JSON validado) — Ollama local + Cloud free tier (`https://ollama.com`) já implementado em `app/scoring/llm.py:88-274` | ✅ Base implementada (aguarda integração Fase 3) |

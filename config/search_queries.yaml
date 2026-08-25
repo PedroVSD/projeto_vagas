@@ -1,0 +1,55 @@
+# Fase 3 - Famílias de buscas configuráveis (editável sem mudar código)
+# Spec §5: várias famílias + booleanas quando fonte suportar
+
+# queries simples (usadas por Demo e Arbeitnow via substring)
+simple:
+  - query: "MLOps Engineer"
+    family: "mlops"
+  - query: "Junior MLOps"
+    family: "mlops"
+  - query: "Machine Learning Engineer"
+    family: "ml_engineering"
+  - query: "Junior Machine Learning Engineer"
+    family: "ml_engineering"
+  - query: "ML Engineer"
+    family: "ml_engineering"
+  - query: "Data Engineer"
+    family: "data_engineering"
+  - query: "Junior Data Engineer"
+    family: "data_engineering"
+  - query: "Software Engineer Python"
+    family: "software_engineering"
+  - query: "Backend Engineer Python"
+    family: "software_engineering"
+  - query: "Junior Software Engineer"
+    family: "software_engineering"
+  - query: "Python Developer"
+    family: "software_engineering"
+  - query: "Data Scientist"
+    family: "data_science"
+  - query: "Junior Data Scientist"
+    family: "data_science"
+  - query: "AI Engineer"
+    family: "ai_engineering"
+  - query: "ML Engineer Intern"
+    family: "intern"
+  - query: "Data Engineer Intern"
+    family: "intern"
+  - query: "Software Engineer Intern"
+    family: "intern"
+
+# booleanas (para fontes que suportam, ex: Greenhouse Lever)
+boolean:
+  - query: '("MLOps" OR "Machine Learning Operations") AND (Junior OR "Entry Level" OR Intern OR Internship)'
+    family: "mlops_boolean"
+  - query: '("Machine Learning Engineer" OR "ML Engineer") AND (Junior OR Intern OR "Entry Level")'
+    family: "ml_engineering_boolean"
+  - query: '("Data Engineer" OR "Data Engineering") AND (Junior OR Intern OR "Entry Level")'
+    family: "data_engineering_boolean"
+  - query: '("Software Engineer" OR "Backend Engineer" OR "Python Developer") AND (Python OR FastAPI OR Go OR Golang) AND (Junior OR Intern OR "Entry Level")'
+    family: "software_boolean"
+
+# thresholds
+settings:
+  min_score_threshold: 60
+  immediate_threshold: 90
