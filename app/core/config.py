@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     scheduler_interval_minutes: int = Field(default=60, ge=1, description="Intervalo coleta em minutos")
     scheduler_collect_on_start: bool = Field(default=False, description="Executa coleta ao iniciar")
 
+    # Observabilidade (Fase 7)
+    log_format: str = Field(default="text", description="text ou json")
+
 
 @lru_cache
 def get_settings() -> Settings:

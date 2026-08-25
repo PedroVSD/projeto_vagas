@@ -380,13 +380,23 @@ uv run python -m app.workers.scheduler
 | GET | `/jobs` | Lista vagas (filtros: score, área, modalidade) |
 | GET | `/jobs/{id}` | Detalhe da vaga |
 | GET | `/jobs/recommended` | Vagas recomendadas (score >= threshold) |
-| GET/POST | `/jobs/search` | Busca textual |
-| GET/POST | `/sources` | Lista/cria fontes |
-| GET/PUT | `/preferences` | Preferências do usuário |
-| GET | `/notifications` | Histórico de notificações |
-| GET | `/notifications/digest` | Digest diário (total, highly, relevant, top5) |
-| GET | `/notifications/providers` | Status Telegram/Email (enabled) |
-| POST | `/notifications/test` | Envio de teste (mockado se sem credenciais) |
+| GET | `/jobs/search/text` | Busca textual ILIKE |
+| GET | `/sources` | Lista fontes |
+| POST | `/sources/ingest` | Ingere todas fontes (com scoring+notificação) |
+| GET | `/sources/preview/{name}` | Preview normalizado + scoring sem persistir |
+| GET | `/sources/queries` | Lista queries YAML (21) |
+| GET | `/notifications` | Histórico notificações |
+| GET | `/notifications/digest` | Digest diário |
+| GET | `/notifications/providers` | Status Telegram/Email |
+| POST | `/notifications/test` | Envio teste |
+| GET | `/scoring/llm/status` | Status LLM provider |
+| POST | `/scoring/llm/classify` | Classifica vaga com LLM |
+| POST | `/scoring/recompute/{id}` | Recomputa score heurístico+LLM |
+| GET | `/worker/status` | Status scheduler |
+| POST | `/worker/run` | Pipeline manual |
+| GET | `/metrics` | Métricas Prometheus |
+| GET | `/observability` | Estatísticas JSON |
+| GET | `/health/detailed` | Health detalhado |
 
 Docs interativas: `http://localhost:8000/docs` (Swagger) e `/redoc`.
 
@@ -394,11 +404,11 @@ Docs interativas: `http://localhost:8000/docs` (Swagger) e `/redoc`.
 
 ## Observabilidade
 
-- Logging estruturado (JSON) com correlação por execução/fonte.
-- Métricas por execução: coletadas, novas, duplicadas, descartadas, enviadas, tempo, erros por fonte.
-- Tratamento de exceções por fonte (falha de uma não derruba pipeline).
-- Pronto para Prometheus/Grafana (endpoint `/metrics` futuro).
-- Logs nunca expõem tokens/secrets.
+- **Logging estruturado** `app/core/logging.py:1` — `text` default ou `LOG_FORMAT=json` (JSON com `timestamp/level/logger/message/metrics`, pronto para Loki/Grafana), `uvicorn.access` silenciado, secrets nunca logados.
+- **Métricas por execução** `app/workers/runner.py:44` + `app/core/metrics.py:1` — `collected`, `new`, `duplicates`, `discarded`, `errors`, `errors_by_source`, `notifications_sent`, `elapsed_s`, histórico últimas 100 execuções (`record_run()`), `GET /observability` (JSON) e `GET /metrics` (Prometheus text `job_finder_jobs_total`, `by_classification`, pronto para Grafana).
+- **Tratamento de exceções** por fonte (falha de uma não derruba pipeline, `ingest_all()` isola), por LLM, por provider notificação.
+- **Health detalhado** `GET /health/detailed` — db, llm, scheduler, notifications, stats.
+- **Pronto para Prometheus/Grafana** — endpoint `/metrics` (`text/plain; version=0.0.4`).
 
 ---
 
@@ -423,7 +433,7 @@ Cobertura para: normalização, deduplicação, scoring, filtros, classificaçã
 | **4** | Notificações Telegram + Email (adapter `NotificationProvider.send()`, `TelegramProvider`, `EmailProvider`, `format_job_message()`, thresholds 60 digest / 90 imediato, digest diário) | ✅ Concluída |
 | **5** | Scheduler/worker (APScheduler monólito modular, `app/workers/runner.py` pipeline, `app/workers/scheduler.py` coleta 60min + digest 08:00, `docker compose --profile worker up`, `POST /worker/run` manual) — justificado vs Celery (MVP sem broker) | ✅ Concluída |
 | **6** | LLM para classificação avançada (pós-filtro, JSON validado `LLMClassification`, `OllamaProvider` local+Cloud `https://ollama.com` free `gpt-oss:20b-cloud`, `OpenAIProvider`, custo-controlado só se heuristic>=60, `score_and_persist()` média 70/30, `GET /scoring/llm/status`, `POST /scoring/llm/classify`, `POST /scoring/recompute/{id}`) | ✅ Concluída |
-| **7** | Observabilidade, testes, Docker, documentação, deploy | Planejado |
+| **7** | Observabilidade (`app/core/metrics.py`, `/metrics` Prometheus, `/observability`, `/health/detailed`, `LOG_FORMAT=json`), testes 49, Docker `docker-compose.yml` api/db/worker/scheduler/ollama, documentação completa, deploy | ✅ Concluída |
 
 Cada fase mantém o sistema funcional (MVP incremental).
 

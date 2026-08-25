@@ -41,23 +41,36 @@ def run_pipeline(sources: list | None = None) -> dict[str, Any]:
         total_dup = sum(r.get("duplicates", 0) for r in results)
         total_err = sum(r.get("errors", 0) for r in results)
 
-        # Observabilidade (§16)
-        # jobs scored já via ingestion; contar notificações enviadas
+        # Observabilidade (§16 - Fase 7)
+        # jobs scored já via ingestion; contar notificações e por fonte
+        from app.core.metrics import record_run
         from app.models.notification import Notification
 
-        sent = db.query(Notification).filter(Notification.status == "sent").count()
+        try:
+            sent = db.query(Notification).filter(Notification.status == "sent").count()
+        except Exception:
+            sent = 0
 
         elapsed = round(time.time() - start, 2)
+        # erros por fonte
+        errors_by_source = {r["source"]: r.get("errors", 0) for r in results}
         metrics = {
             "collected": total_collected,
             "new": total_new,
             "duplicates": total_dup,
+            "discarded": max(0, total_collected - total_new - total_dup),
             "errors": total_err,
+            "errors_by_source": errors_by_source,
             "notifications_sent": sent,
             "elapsed_s": elapsed,
             "sources": results,
         }
-        logger.info("Pipeline done %s", metrics)
+        # logging estruturado (Fase 7) - não expõe secrets
+        logger.info("Pipeline done metrics=%s", metrics, extra={"metrics": metrics})
+        try:
+            record_run(metrics)
+        except Exception:
+            pass
         return metrics
     except Exception as e:
         logger.exception("Pipeline falhou: %s", e)

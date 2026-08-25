@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.health import router as health_router
 from app.api.routes.jobs import router as jobs_router
 from app.api.routes.notifications import router as notifications_router
+from app.api.routes.observability import router as observability_router
 from app.api.routes.scoring import router as scoring_router
 from app.api.routes.sources import router as sources_router
 from app.api.routes.worker import router as worker_router
@@ -36,6 +37,7 @@ app.include_router(sources_router)
 app.include_router(notifications_router)
 app.include_router(worker_router)
 app.include_router(scoring_router)
+app.include_router(observability_router)
 
 
 @app.get("/", tags=["root"])

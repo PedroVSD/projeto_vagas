@@ -11,6 +11,7 @@ def test_run_pipeline_mocked():
         mock_ingest.return_value = [
             {"source": "demo", "collected": 3, "new": 3, "duplicates": 0, "errors": 0}
         ]
+        # garantir que mock_db não quebre errors_by_source
         # mock Notification count
         mock_query = Mock()
         mock_query.filter.return_value.count.return_value = 1
@@ -63,7 +64,7 @@ def test_run_pipeline_via_api_mocked():
     from app.main import app
 
     c = TestClient(app)
-    with patch("app.workers.runner.ingest_all", return_value=[{"collected": 1, "new": 1, "duplicates": 0, "errors": 0}]):
+    with patch("app.workers.runner.ingest_all", return_value=[{"source": "demo", "collected": 1, "new": 1, "duplicates": 0, "errors": 0}]):
         with patch("app.workers.runner.SessionLocal") as mock_session_cls:
             mock_db = Mock()
             mock_session_cls.return_value = mock_db
