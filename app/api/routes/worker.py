@@ -20,7 +20,10 @@ def status():
         "digest_time": s.digest_time,
         "collect_on_start": s.scheduler_collect_on_start,
         "mode": "APScheduler (monólito modular) - Fase 5",
-        "note": "Worker roda via docker compose --profile worker up ou scheduler local via python -m app.workers.scheduler",
+        "note": (
+            "Worker roda via docker compose --profile worker up "
+            "ou scheduler local via python -m app.workers.scheduler"
+        ),
     }
 
 

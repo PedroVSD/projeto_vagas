@@ -7,7 +7,7 @@ Evita duplicatas (mesma vaga múltiplas fontes = único registro, atualiza last_
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -69,8 +69,8 @@ def ingest_source(db: Session, source: JobSource) -> dict:
 
             if existing:
                 # Atualiza se mudou
-                existing.last_seen_at = datetime.now(timezone.utc)
-                existing.updated_at = datetime.now(timezone.utc)
+                existing.last_seen_at = datetime.now(UTC)
+                existing.updated_at = datetime.now(UTC)
                 if norm.description and norm.description != existing.description:
                     existing.description = norm.description
                 if norm.technologies:
@@ -85,7 +85,16 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                     try:
                         from app.notifications.service import notify_job
 
-                        notify_job(db, existing, {"final_score": score.final_score, "classification": score.classification, "area_breakdown": score.area_breakdown, "penalties": score.penalties})
+                        notify_job(
+                            db,
+                            existing,
+                            {
+                                "final_score": score.final_score,
+                                "classification": score.classification,
+                                "area_breakdown": score.area_breakdown,
+                                "penalties": score.penalties,
+                            },
+                        )
                     except Exception as ne:
                         logger.warning("Notificação falhou job %s: %s", existing.id, ne)
                 except Exception as se:
@@ -117,7 +126,16 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                     try:
                         from app.notifications.service import notify_job
 
-                        notify_job(db, job, {"final_score": score.final_score, "classification": score.classification, "area_breakdown": score.area_breakdown, "penalties": score.penalties})
+                        notify_job(
+                            db,
+                            job,
+                            {
+                                "final_score": score.final_score,
+                                "classification": score.classification,
+                                "area_breakdown": score.area_breakdown,
+                                "penalties": score.penalties,
+                            },
+                        )
                     except Exception as ne:
                         logger.warning("Notificação falhou novo job %s: %s", norm.title, ne)
                 except Exception as se:
@@ -136,7 +154,7 @@ def ingest_source(db: Session, source: JobSource) -> dict:
         errors += 1
 
     # atualiza last_run_at
-    source_model.last_run_at = datetime.now(timezone.utc)
+    source_model.last_run_at = datetime.now(UTC)
     db.commit()
 
     metrics = {
@@ -158,5 +176,14 @@ def ingest_all(db: Session, sources: list[JobSource]) -> list[dict]:
             results.append(ingest_source(db, s))
         except Exception as e:
             logger.exception("Fonte %s falhou completamente: %s", s.name, e)
-            results.append({"source": s.name, "collected": 0, "new": 0, "duplicates": 0, "errors": 1, "error": str(e)})
+            results.append(
+                {
+                    "source": s.name,
+                    "collected": 0,
+                    "new": 0,
+                    "duplicates": 0,
+                    "errors": 1,
+                    "error": str(e),
+                }
+            )
     return results

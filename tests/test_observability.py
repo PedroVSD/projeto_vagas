@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 
 def test_metrics_endpoint_no_db():
@@ -26,7 +26,13 @@ def test_observability_endpoint_mocked():
             "notifications_sent": 2,
             "notifications_failed": 0,
             "notifications_pending": 1,
-            "by_classification": {"excelente": 2, "muito_relevante": 3, "relevante": 3, "talvez_relevante": 1, "ignorar": 1},
+            "by_classification": {
+                "excelente": 2,
+                "muito_relevante": 3,
+                "relevante": 3,
+                "talvez_relevante": 1,
+                "ignorar": 1,
+            },
             "recent_runs": [],
         }
         r = c.get("/observability")
@@ -57,7 +63,13 @@ def test_metrics_prometheus_format():
         "jobs_scored": 5,
         "notifications_sent": 2,
         "notifications_failed": 1,
-        "by_classification": {"excelente": 1, "muito_relevante": 1, "relevante": 1, "talvez_relevante": 1, "ignorar": 1},
+        "by_classification": {
+            "excelente": 1,
+            "muito_relevante": 1,
+            "relevante": 1,
+            "talvez_relevante": 1,
+            "ignorar": 1,
+        },
     }
     out = prometheus_format(stats)
     assert "job_finder_jobs_total 5" in out

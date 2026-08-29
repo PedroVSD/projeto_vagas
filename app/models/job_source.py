@@ -1,10 +1,16 @@
-from datetime import datetime, timezone
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.job import Job
 
 
 class JobSource(Base):
@@ -16,7 +22,7 @@ class JobSource(Base):
     config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
 
-    jobs: Mapped[list["Job"]] = relationship(back_populates="source")  # type: ignore[name-defined]
+    jobs: Mapped[list[Job]] = relationship(back_populates="source")

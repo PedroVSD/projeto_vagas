@@ -14,8 +14,8 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
-from app.sources.registry import DEFAULT_SOURCES
 from app.services.ingestion import ingest_all
+from app.sources.registry import DEFAULT_SOURCES
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,6 @@ def run_digest() -> dict[str, Any]:
     """Gera e envia digest diário (08:00)."""
     from app.core.database import SessionLocal
     from app.notifications.service import build_digest, get_enabled_providers
-    from app.notifications.formatting import format_job_message
 
     db = SessionLocal()
     try:
@@ -98,10 +97,10 @@ def run_digest() -> dict[str, Any]:
         top_lines = "\n".join(
             f"- {j['title']} — {j['company']} [{j['score']}/100] {j['url']}" for j in digest["top"]
         )
-        text = f"""Digest Diário Job Finder — {digest['total']} vagas no banco
-{digest['highly_relevant']} altamente relevantes (>=75)
-{digest['relevant']} relevantes (60-74)
-{digest['discarded']} descartadas (<45)
+        text = f"""Digest Diário Job Finder — {digest["total"]} vagas no banco
+{digest["highly_relevant"]} altamente relevantes (>=75)
+{digest["relevant"]} relevantes (60-74)
+{digest["discarded"]} descartadas (<45)
 
 Top 5:
 {top_lines if top_lines else "Nenhuma vaga relevante ainda."}

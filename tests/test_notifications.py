@@ -15,7 +15,12 @@ def test_format_job_message():
         "technologies": ["Python", "SQL", "Airflow"],
         "first_seen_at": "2026-08-24",
     }
-    score = {"final_score": 87, "classification": "muito_relevante", "area_breakdown": {"area": "data_engineering"}, "penalties": {}}
+    score = {
+        "final_score": 87,
+        "classification": "muito_relevante",
+        "area_breakdown": {"area": "data_engineering"},
+        "penalties": {},
+    }
     subject, body = format_job_message(job, score)
     assert "Junior Data Engineer" in subject
     assert "Empresa X" in subject
@@ -67,7 +72,12 @@ def test_telegram_send_mocked():
             "company": "Demo",
             "url": "https://example.com",
             "technologies": ["Python"],
-            "score": {"final_score": 90, "classification": "excelente", "area_breakdown": {"area": "mlops"}, "penalties": {}},
+            "score": {
+                "final_score": 90,
+                "classification": "excelente",
+                "area_breakdown": {"area": "mlops"},
+                "penalties": {},
+            },
         }
         assert p.send(payload) is True
 
@@ -92,7 +102,12 @@ def test_email_send_mocked():
             "company": "Demo",
             "url": "https://example.com",
             "technologies": ["Python"],
-            "score": {"final_score": 90, "classification": "excelente", "area_breakdown": {}, "penalties": {}},
+            "score": {
+                "final_score": 90,
+                "classification": "excelente",
+                "area_breakdown": {},
+                "penalties": {},
+            },
         }
         assert p.send(payload) is True
         mock_server.send_message.assert_called_once()
@@ -125,7 +140,12 @@ def test_notify_job_creates_notification_mocked_db():
     mock_company.name = "Empresa X"
     mock_job.company = mock_company
 
-    score = {"final_score": 85, "classification": "muito_relevante", "area_breakdown": {"area": "data_engineering"}, "penalties": {}}
+    score = {
+        "final_score": 85,
+        "classification": "muito_relevante",
+        "area_breakdown": {"area": "data_engineering"},
+        "penalties": {},
+    }
 
     # Mock provider
     mock_provider = Mock()

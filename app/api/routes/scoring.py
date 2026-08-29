@@ -28,7 +28,10 @@ def llm_status():
         "has_ollama_api_key": bool(s.ollama_api_key),
         "openai_model": s.openai_model,
         "has_openai_key": bool(s.openai_api_key),
-        "note": "LLM só é chamado para vagas candidatas (heuristic >= score_threshold) - custo controlado",
+        "note": (
+            "LLM só é chamado para vagas candidatas "
+            "(heuristic >= score_threshold) - custo controlado"
+        ),
     }
 
 

@@ -52,7 +52,21 @@ def test_tech_cap():
         "location": "Remoto",
         "modality": "remoto",
         "seniority": "junior",
-        "technologies": ["Python", "Go", "Docker", "Kubernetes", "AWS", "GCP", "Azure", "Airflow", "Spark", "Databricks", "MLflow", "SQL", "Kafka"],
+        "technologies": [
+            "Python",
+            "Go",
+            "Docker",
+            "Kubernetes",
+            "AWS",
+            "GCP",
+            "Azure",
+            "Airflow",
+            "Spark",
+            "Databricks",
+            "MLflow",
+            "SQL",
+            "Kafka",
+        ],
     }
     res = score_job(job)
     assert res["tech_breakdown"]["points"] == 25  # cap
@@ -68,6 +82,19 @@ def test_classify_thresholds():
 
 
 def test_is_relevant_filter():
-    assert is_relevant({"title": "Junior Python", "description": "Python", "technologies": ["Python"]})[0] is True
-    assert is_relevant({"title": "Vendas", "description": "vendas marketing", "technologies": []})[0] is False
-    assert is_relevant({"title": "Senior", "description": "exige 10+ anos", "technologies": ["Python"]})[0] is False
+    assert (
+        is_relevant(
+            {"title": "Junior Python", "description": "Python", "technologies": ["Python"]}
+        )[0]
+        is True
+    )
+    assert (
+        is_relevant({"title": "Vendas", "description": "vendas marketing", "technologies": []})[0]
+        is False
+    )
+    assert (
+        is_relevant(
+            {"title": "Senior", "description": "exige 10+ anos", "technologies": ["Python"]}
+        )[0]
+        is False
+    )

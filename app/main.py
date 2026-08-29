@@ -1,7 +1,9 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.api.routes.health import router as health_router
 from app.api.routes.jobs import router as jobs_router
@@ -48,7 +50,33 @@ def root():
         "env": settings.app_env,
         "docs": "/docs",
         "health": "/health",
+        "frontend": "/ui",
     }
+
+
+# Frontend simples (vanilla HTML/JS) — sem dependência extra (aiofiles)
+_STATIC_DIR = Path(__file__).parent / "static"
+_INDEX = _STATIC_DIR / "index.html"
+
+
+@app.get("/ui", tags=["frontend"], include_in_schema=False)
+def ui():
+    if _INDEX.exists():
+        return FileResponse(_INDEX, media_type="text/html")
+    return {"error": "frontend not built", "expected": str(_INDEX)}
+
+
+@app.get("/frontend", tags=["frontend"], include_in_schema=False)
+def frontend():
+    # alias para /ui
+    if _INDEX.exists():
+        return FileResponse(_INDEX, media_type="text/html")
+    return RedirectResponse(url="/ui")
+
+
+@app.get("/app", tags=["frontend"], include_in_schema=False)
+def app_alias():
+    return RedirectResponse(url="/ui")
 
 
 logger.info("App initialized env=%s debug=%s", settings.app_env, settings.debug)

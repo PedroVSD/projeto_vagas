@@ -16,8 +16,7 @@ router = APIRouter(prefix="/sources", tags=["sources"])
 def list_sources():
     return {
         "sources": [
-            {"name": s.name, "description": s.__class__.__doc__ or ""}
-            for s in DEFAULT_SOURCES
+            {"name": s.name, "description": s.__class__.__doc__ or ""} for s in DEFAULT_SOURCES
         ]
     }
 
@@ -28,7 +27,10 @@ def ingest(sources: list[str] | None = None, db: Session = Depends(get_db)):
     if sources:
         targets = [s for s in DEFAULT_SOURCES if s.name in sources]
         if not targets:
-            return {"error": f"nenhuma fonte encontrada para {sources}", "available": [s.name for s in DEFAULT_SOURCES]}
+            return {
+                "error": f"nenhuma fonte encontrada para {sources}",
+                "available": [s.name for s in DEFAULT_SOURCES],
+            }
     results = ingest_all(db, targets)
     return {"results": results}
 
@@ -37,7 +39,10 @@ def ingest(sources: list[str] | None = None, db: Session = Depends(get_db)):
 def ingest_one(source_name: str, db: Session = Depends(get_db)):
     src = get_source_by_name(source_name)
     if not src:
-        return {"error": f"fonte '{source_name}' não encontrada", "available": [s.name for s in DEFAULT_SOURCES]}
+        return {
+            "error": f"fonte '{source_name}' não encontrada",
+            "available": [s.name for s in DEFAULT_SOURCES],
+        }
     result = ingest_source(db, src)
     return result
 

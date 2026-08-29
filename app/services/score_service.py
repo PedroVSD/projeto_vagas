@@ -1,7 +1,7 @@
-"""Fase 3/6 - Serviço de scoring: heuristic + LLM opcional (custo-controlado).
+"""Fase 3/6 - Serviço de scoring: heuristic + LLM opcional.
 
-Fase 6: LLM só para candidatas (heuristic >= threshold), JSON validado, não controla pipeline diretamente.
-LLM pode ser Ollama local, Ollama Cloud free (https://ollama.com) ou OpenAI.
+Fase 6: LLM só para candidatas (heuristic >= threshold), JSON validado,
+não controla pipeline diretamente. Suporta Ollama local/cloud ou OpenAI.
 """
 
 from __future__ import annotations
@@ -57,17 +57,26 @@ def score_and_persist(db: Session, job: Job) -> JobScore:
                 if llm_res:
                     llm_score_val = llm_res.overall_match
                     llm_payload = llm_res.model_dump()
-                    # final = média ponderada heuristic 70% + llm 30% (heurístico domina, LLM ajusta)
+                    # final = média ponderada heuristic 70% + llm 30%
                     # LLM não controla diretamente, mas refina
                     final = int(round(result["heuristic_score"] * 0.7 + llm_score_val * 0.3))
                     result["final_score"] = max(0, min(100, final))
-                    # se LLM recomendar ignore e heuristic for alto, mantém heuristic (não deixa LLM derrubar sozinho)
+                    # se LLM recomendar ignore mas heuristic alto, mantém heuristic
                     if llm_res.recommendation == "ignore" and result["heuristic_score"] >= 75:
                         result["final_score"] = result["heuristic_score"]
-                        logger.info("LLM recommend ignore mas heuristic alto, mantendo %s", result["final_score"])
+                        logger.info(
+                            "LLM recommend ignore mas heuristic alto, mantendo %s",
+                            result["final_score"],
+                        )
                     # anexa llm no breakdown para auditoria
                     result["llm"] = llm_payload
-                    logger.info("LLM score job %s: heuristic %s -> final %s (llm %s)", job.id, result["heuristic_score"], result["final_score"], llm_score_val)
+                    logger.info(
+                        "LLM score job %s: heuristic %s -> final %s (llm %s)",
+                        job.id,
+                        result["heuristic_score"],
+                        result["final_score"],
+                        llm_score_val,
+                    )
                 else:
                     logger.debug("LLM sem retorno para job %s", job.id)
         except Exception as e:
@@ -84,7 +93,7 @@ def score_and_persist(db: Session, job: Job) -> JobScore:
         existing.tech_breakdown = result["tech_breakdown"]
         existing.modality_breakdown = result["modality_breakdown"]
         existing.penalties = result["penalties"]
-        # armazena llm payload no tech_breakdown extra ou penalties? usa tech_breakdown para auditoria se houver
+        # armazena llm payload no tech_breakdown para auditoria
         if llm_payload:
             existing.tech_breakdown = {**(result["tech_breakdown"] or {}), "llm": llm_payload}
         db.flush()
@@ -98,7 +107,11 @@ def score_and_persist(db: Session, job: Job) -> JobScore:
         classification=result["classification"],
         seniority_breakdown=result["seniority_breakdown"],
         area_breakdown=result["area_breakdown"],
-        tech_breakdown=result["tech_breakdown"] if not llm_payload else {**(result["tech_breakdown"] or {}), "llm": llm_payload},
+        tech_breakdown=(
+            result["tech_breakdown"]
+            if not llm_payload
+            else {**(result["tech_breakdown"] or {}), "llm": llm_payload}
+        ),
         modality_breakdown=result["modality_breakdown"],
         penalties=result["penalties"],
     )
@@ -108,7 +121,12 @@ def score_and_persist(db: Session, job: Job) -> JobScore:
 
 
 def score_all_unscored(db: Session) -> int:
-    jobs = db.query(Job).outerjoin(JobScore, Job.id == JobScore.job_id).filter(JobScore.id.is_(None)).all()
+    jobs = (
+        db.query(Job)
+        .outerjoin(JobScore, Job.id == JobScore.job_id)
+        .filter(JobScore.id.is_(None))
+        .all()
+    )
     for j in jobs:
         score_and_persist(db, j)
     db.commit()

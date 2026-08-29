@@ -7,7 +7,8 @@ Uso:
     if provider.is_enabled():
         result = provider.classify(job_dict)
 
-Custo controlado: chamar apenas após scoring heurístico e para vagas candidatas (score >= threshold).
+Custo controlado: chamar apenas após scoring heurístico e
+para vagas candidatas (score >= threshold).
 Valida JSON contra schema - saída livre do LLM nunca controla pipeline diretamente.
 """
 
@@ -29,29 +30,43 @@ logger = logging.getLogger(__name__)
 # Schema de saída validado (spec seção 8)
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """Você é um classificador de vagas para um candidato Júnior/Estágio em MLOps, Engenharia de Software, Dados e Ciência de Dados.
-Avalie a vaga com rigor e retorne APENAS JSON válido no schema especificado, sem markdown, sem explicação extra.
-Seja conservador: só dê overall_match alto se houver forte aderência técnica e senioridade compatível.
-"""
+SYSTEM_PROMPT = (
+    "Você é um classificador de vagas para um candidato Júnior/Estágio em "
+    "MLOps, Engenharia de Software, Dados e Ciência de Dados. "
+    "Avalie a vaga com rigor e retorne APENAS JSON válido no schema "
+    "especificado, sem markdown, sem explicação extra. "
+    "Seja conservador: só dê overall_match alto se houver forte aderência "
+    "técnica e senioridade compatível."
+)
 
 
 def _build_user_prompt(job: dict[str, Any]) -> str:
-    return f"""Classifique esta vaga. Retorne JSON com as chaves exatas: relevance_score, seniority_match, area_match, technology_match, remote_match, overall_match, recommendation, reason, missing_requirements, matching_skills, concerns.
-
-Vaga:
-- título: {job.get('title')}
-- empresa: {job.get('company')}
-- localização: {job.get('location')}
-- modalidade: {job.get('modality')}
-- senioridade: {job.get('seniority')}
-- descrição: {(job.get('description') or '')[:4000]}
-- requisitos: {job.get('requirements') or job.get('description') or ''[:2000]}
-- tecnologias: {job.get('technologies')}
-- URL: {job.get('url')}
-
-Responda apenas com JSON. Exemplo:
-{{"relevance_score": 85, "seniority_match": 90, "area_match": 80, "technology_match": 85, "remote_match": 100, "overall_match": 87, "recommendation": "apply", "reason": "...", "missing_requirements": [], "matching_skills": ["Python"], "concerns": []}}
-"""
+    keys = (
+        "relevance_score, seniority_match, area_match, technology_match, "
+        "remote_match, overall_match, recommendation, reason, "
+        "missing_requirements, matching_skills, concerns"
+    )
+    example = (
+        '{"relevance_score": 85, "seniority_match": 90, "area_match": 80, '
+        '"technology_match": 85, "remote_match": 100, "overall_match": 87, '
+        '"recommendation": "apply", "reason": "...", '
+        '"missing_requirements": [], "matching_skills": ["Python"], '
+        '"concerns": []}'
+    )
+    return (
+        f"Classifique esta vaga. Retorne JSON com as chaves exatas: {keys}.\n\n"
+        f"Vaga:\n"
+        f"- título: {job.get('title')}\n"
+        f"- empresa: {job.get('company')}\n"
+        f"- localização: {job.get('location')}\n"
+        f"- modalidade: {job.get('modality')}\n"
+        f"- senioridade: {job.get('seniority')}\n"
+        f"- descrição: {(job.get('description') or '')[:4000]}\n"
+        f"- requisitos: {job.get('requirements') or job.get('description') or ''[:2000]}\n"
+        f"- tecnologias: {job.get('technologies')}\n"
+        f"- URL: {job.get('url')}\n\n"
+        f"Responda apenas com JSON. Exemplo:\n{example}\n"
+    )
 
 
 class LLMClassification(BaseModel):
@@ -114,7 +129,8 @@ class OllamaProvider(BaseLLMProvider):
             "format": "json",
             "options": {"temperature": 0.2, "num_predict": 800},
         }
-        # Tenta endpoint OpenAI-compatível primeiro (/v1/chat/completions), fallback para /api/chat nativo
+        # Tenta endpoint OpenAI-compatível primeiro,
+        # fallback para /api/chat nativo
         urls = [
             f"{self.base_url}/v1/chat/completions",
             f"{self.base_url}/api/chat",
@@ -252,7 +268,7 @@ def get_llm_provider() -> BaseLLMProvider:
 
     - ollama  -> OllamaProvider
     - openai  -> OpenAIProvider
-    - auto    -> tenta Ollama se OLLAMA_BASE_URL responder, senão OpenAI se tiver key, senão disabled
+    - auto    -> tenta Ollama se responder, senão OpenAI se tiver key
     - disabled -> nunca chama LLM
     """
     settings = get_settings()
@@ -273,11 +289,13 @@ def get_llm_provider() -> BaseLLMProvider:
         if not settings.openai_api_key:
             logger.warning("llm_provider=openai mas OPENAI_API_KEY não configurada")
             return DisabledProvider()
-        return OpenAIProvider(settings.openai_api_key, settings.openai_model, settings.openai_base_url)
+        return OpenAIProvider(
+            settings.openai_api_key, settings.openai_model, settings.openai_base_url
+        )
 
     # auto
     if provider == "auto":
-        # Prefere Ollama (local ou cloud https://ollama.com) se health check ok, senão OpenAI
+        # Prefere Ollama (local ou cloud) se health check ok, senão OpenAI
         ollama = OllamaProvider(
             settings.ollama_base_url,
             settings.ollama_model,
@@ -285,12 +303,18 @@ def get_llm_provider() -> BaseLLMProvider:
             settings.ollama_api_key,
         )
         if ollama.health_check():
-            logger.info("LLM auto: usando Ollama %s @ %s", settings.ollama_model, settings.ollama_base_url)
+            logger.info(
+                "LLM auto: usando Ollama %s @ %s",
+                settings.ollama_model,
+                settings.ollama_base_url,
+            )
             return ollama
         if settings.openai_api_key:
             logger.info("LLM auto: Ollama indisponível, usando OpenAI %s", settings.openai_model)
-            return OpenAIProvider(settings.openai_api_key, settings.openai_model, settings.openai_base_url)
-        logger.info("LLM auto: nenhum provider disponível (Ollama offline e OPENAI_API_KEY vazia) -> disabled")
+            return OpenAIProvider(
+                settings.openai_api_key, settings.openai_model, settings.openai_base_url
+            )
+        logger.info("LLM auto: nenhum provider disponível (Ollama offline e sem key) -> disabled")
         return DisabledProvider()
 
     logger.warning("llm_provider desconhecido '%s' -> disabled", provider)

@@ -1,4 +1,5 @@
 """Seed mínimo para testar Fase 1."""
+
 from app.core.database import SessionLocal
 from app.models.company import Company
 from app.models.job import Job

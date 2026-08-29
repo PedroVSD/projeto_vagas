@@ -51,10 +51,11 @@ class ArbeitnowSource(JobSource):
 
         raws: list[RawJob] = []
         for j in jobs:
-            # campos: slug, company_name, title, description, remote, url, tags, job_types, location, created_at
+            # campos: slug, company_name, title, description, remote,
+            # url, tags, job_types, location, created_at
             title = j.get("title") or "Sem título"
             company = j.get("company_name") or "Desconhecida"
-            url = j.get("url") or f"https://www.arbeitnow.com/jobs/{j.get('slug','')}"
+            url = j.get("url") or f"https://www.arbeitnow.com/jobs/{j.get('slug', '')}"
             slug = j.get("slug") or url
             raws.append(
                 RawJob(

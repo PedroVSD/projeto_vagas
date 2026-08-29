@@ -6,7 +6,8 @@ from __future__ import annotations
 def format_job_message(job: dict, score: dict | None = None) -> tuple[str, str]:
     """Retorna (subject, body) para email/telegram.
 
-    job: {title, company, location, modality, seniority, technologies, url, description, first_seen_at}
+    job: {title, company, location, modality, seniority,
+          technologies, url, description, first_seen_at}
     score: {final_score, classification, breakdown}
     """
     title = job.get("title") or "Vaga"
@@ -29,7 +30,8 @@ def format_job_message(job: dict, score: dict | None = None) -> tuple[str, str]:
         reasons.append(area)
     reasons = list(dict.fromkeys(reasons))  # dedup
 
-    # Gaps: techs faltantes? simplificado: se não tem AWS etc., mas spec quer gaps reais — deixamos placeholder
+    # Gaps: techs faltantes? simplificado: se não tem AWS etc.,
+    # mas spec quer gaps reais — deixamos placeholder
     gaps = []
     if score and score.get("penalties"):
         gaps = list(score["penalties"].keys())
@@ -38,11 +40,15 @@ def format_job_message(job: dict, score: dict | None = None) -> tuple[str, str]:
         popular = ["AWS", "Docker", "Kubernetes"]
         gaps = [p for p in popular if p not in (techs or [])][:2]
 
-    subject = f"{title} — {company} [{score_val}/100]" if score_val is not None else f"{title} — {company}"
+    subject = (
+        f"{title} — {company} [{score_val}/100]"
+        if score_val is not None
+        else f"{title} — {company}"
+    )
 
     body = f"""**{title} — {company}**
 
-Score: {score_val if score_val is not None else 'N/A'}/100 ({classification or 'N/A'})
+Score: {score_val if score_val is not None else "N/A"}/100 ({classification or "N/A"})
 Modalidade: {modality}
 Localização: {loc}
 Senioridade: {seniority}
@@ -55,7 +61,7 @@ Gaps:
 
 Candidatura: {url}
 
-Data encontrada: {job.get('first_seen_at') or job.get('created_at') or 'hoje'}
+Data encontrada: {job.get("first_seen_at") or job.get("created_at") or "hoje"}
 """
 
     # Telegram markdown, Email plain — mesmo body serve para ambos

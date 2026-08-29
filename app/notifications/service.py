@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -28,7 +28,11 @@ def get_enabled_providers() -> list:
     return providers
 
 
-def should_notify(score: dict | None, threshold: int | None = None, immediate_threshold: int | None = None) -> tuple[bool, str]:
+def should_notify(
+    score: dict | None,
+    threshold: int | None = None,
+    immediate_threshold: int | None = None,
+) -> tuple[bool, str]:
     if not score:
         return False, "sem score"
     s = get_settings()
@@ -42,7 +46,9 @@ def should_notify(score: dict | None, threshold: int | None = None, immediate_th
     return False, "abaixo threshold"
 
 
-def notify_job(db: Session, job: Job, score: dict, providers: list | None = None) -> list[Notification]:
+def notify_job(
+    db: Session, job: Job, score: dict, providers: list | None = None
+) -> list[Notification]:
     """Cria e envia notificações para um job se atingir threshold. Retorna lista criada."""
     ok, mode = should_notify(score)
     if not ok:
@@ -75,7 +81,11 @@ def notify_job(db: Session, job: Job, score: dict, providers: list | None = None
         # evita duplicar envio já feito
         exists = (
             db.query(Notification)
-            .filter(Notification.job_id == job.id, Notification.provider == p.name, Notification.status == "sent")
+            .filter(
+                Notification.job_id == job.id,
+                Notification.provider == p.name,
+                Notification.status == "sent",
+            )
             .first()
         )
         if exists:
@@ -95,7 +105,7 @@ def notify_job(db: Session, job: Job, score: dict, providers: list | None = None
         sent = p.send(payload)
         notif.status = "sent" if sent else "failed"
         if sent:
-            notif.sent_at = datetime.now(timezone.utc)
+            notif.sent_at = datetime.now(UTC)
         db.flush()
         created.append(notif)
 
@@ -124,7 +134,9 @@ def build_digest(db: Session, limit: int = 5) -> dict[str, Any]:
     # novas nas últimas 24h? simplificado: total
     # altamente relevantes >=75, relevantes 60-74, descartadas <45
     highly = db.query(JobScore).filter(JobScore.final_score >= 75).count()
-    relevant = db.query(JobScore).filter(JobScore.final_score >= 60, JobScore.final_score < 75).count()
+    relevant = (
+        db.query(JobScore).filter(JobScore.final_score >= 60, JobScore.final_score < 75).count()
+    )
     discarded = db.query(JobScore).filter(JobScore.final_score < 45).count()
 
     top = (

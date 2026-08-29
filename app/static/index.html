@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Job Finder — Dashboard</title>
+<meta name="description" content="Dashboard simples para visualizar vagas coletadas, scoring e notificações" />
+<style>
+  :root {
+    --bg:#f6f7f9;
+    --card:#ffffff;
+    --border:#e5e7eb;
+    --text:#111827;
+    --muted:#6b7280;
+    --primary:#111827;
+    --radius:14px;
+    --shadow:0 4px 12px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family: ui-sans,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg);line-height:1.5}
+  header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em}
+  .brand .dot{width:10px;height:10px;border-radius:999px;background:#10b981;display:inline-block;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  .badge{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--border);background:var(--card);color:var(--muted)}
+  .badge.ok{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+  .badge.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+  .badge.err{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+  .navlinks{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .navlinks a{font-size:13px;color:var(--muted);text-decoration:none;padding:6px 10px;border:1px solid var(--border);background:var(--card);border-radius:999px}
+  .navlinks a:hover{color:var(--text);border-color:#d1d5db}
+  .grid{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;margin:18px 0}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card .hd{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card .hd h2{margin:0;font-size:14px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+  .card .bd{padding:16px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{appearance:none;border:1px solid var(--border);background:var(--primary);color:#fff;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn.secondary{background:var(--card);color:var(--text)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn.small{padding:6px 10px;font-size:12px}
+  input,select{background:var(--card);border:1px solid var(--border);padding:8px 10px;border-radius:10px;font-size:13px;min-width:0}
+  input:focus,select:focus{outline:none;border-color:#9ca3af;box-shadow:0 0 0 3px rgba(17,24,39,.08)}
+  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media (max-width:700px){.kpi{grid-template-columns:repeat(2,1fr)}}
+  .kpi .it{border:1px solid var(--border);background:#f9fafb;border-radius:12px;padding:12px}
+  .kpi .it b{font-size:20px}
+  .kpi .it span{font-size:12px;color:var(--muted);display:block}
+  .jobs{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media (max-width:900px){.jobs{grid-template-columns:1fr}}
+  .job{padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--card);display:flex;flex-direction:column;gap:8px}
+  .job .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+  .job h3{margin:0;font-size:15px;line-height:1.3}
+  .job .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-size:11px;padding:3px 7px;border-radius:999px;border:1px solid var(--border);background:#f9fafb}
+  .pill.excelente{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}
+  .pill.muito_relevante{background:#eff6ff;border-color:#93c5fd;color:#1e40af}
+  .pill.relevante{background:#fffbeb;border-color:#fde68a;color:#92400e}
+  .pill.talvez_relevante{background:#f3f4f6;color:#374151}
+  .pill.ignorar{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+  .techs{display:flex;gap:6px;flex-wrap:wrap}
+  .tech{font-size:11px;padding:2px 6px;background:#f3f4f6;border-radius:999px;border:1px solid #e5e7eb}
+  .desc{font-size:13px;color:#374151;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .small{font-size:12px;color:var(--muted)}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace;font-size:12px}
+  .hr{height:1px;background:var(--border);margin:10px 0}
+  .log{max-height:240px;overflow:auto;background:#0b1220;color:#cbd5e1;padding:10px;border-radius:10px;font-size:12px;white-space:pre-wrap;word-break:break-word}
+  .empty{padding:22px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:12px;background:#f9fafb}
+  .toast{position:fixed;bottom:18px;right:18px;background:#111827;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:var(--shadow);font-size:13px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <span class="dot" id="dot"></span>
+      Job Finder <span class="badge" id="envBadge">dev</span> <span class="badge" id="healthBadge">checking…</span>
+    </div>
+    <div class="navlinks">
+      <a href="/docs" target="_blank">Swagger /docs</a>
+      <a href="/redoc" target="_blank">ReDoc</a>
+      <a href="/health" target="_blank">/health</a>
+      <a href="/metrics" target="_blank">/metrics</a>
+      <a href="/observability" target="_blank">/observability</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+    <section class="card">
+      <div class="hd">
+        <h2>Visão geral</h2>
+        <span class="small">auto-refresh 60s • <span id="lastUpdate">—</span></span>
+      </div>
+      <div class="bd">
+        <div class="kpi" id="kpi">
+          <div class="it"><b id="kpiTotal">—</b><span>total vagas</span></div>
+          <div class="it"><b id="kpiHigh">—</b><span>altamente relevantes (≥75)</span></div>
+          <div class="it"><b id="kpiRel">—</b><span>relevantes (60–74)</span></div>
+          <div class="it"><b id="kpiDisc">—</b><span>descartadas (&lt;45)</span></div>
+        </div>
+        <div class="hr"></div>
+        <div class="row">
+          <button class="btn small" id="btnRefresh">Atualizar</button>
+          <button class="btn small secondary" id="btnIngest">Ingerir todas (POST /sources/ingest)</button>
+          <button class="btn small secondary" id="btnWorker">Rodar pipeline (POST /worker/run)</button>
+          <button class="btn small secondary" id="btnDigest">Digest (GET /notifications/digest)</button>
+        </div>
+        <div id="digestBox" class="small" style="margin-top:8px"></div>
+        <div class="hr"></div>
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="small" style="font-weight:600;color:var(--text)">Fontes & scoring</div>
+            <div class="small" id="llmBox">LLM: checando…</div>
+            <div class="small mono" id="srcBox">sources: —</div>
+          </div>
+          <div class="row">
+            <button class="btn small secondary" id="btnPreviewDemo">Preview demo</button>
+            <button class="btn small secondary" id="btnPreviewArbeit">Preview arbeitnow</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="hd"><h2>Filtros & busca</h2><span class="badge" id="countBadge">0 vagas</span></div>
+      <div class="bd" style="display:flex;flex-direction:column;gap:10px">
+        <div class="row">
+          <input id="q" placeholder="Busca textual (ex: python)" style="flex:1" />
+          <button class="btn small" id="btnSearch">Buscar</button>
+          <button class="btn small secondary" id="btnClear">Limpar</button>
+        </div>
+        <div class="row">
+          <select id="seniority">
+            <option value="">Senioridade (todas)</option>
+            <option value="intern">intern</option>
+            <option value="junior">junior</option>
+            <option value="entry_level">entry_level</option>
+            <option value="trainee">trainee</option>
+            <option value="pleno">pleno</option>
+            <option value="senior">senior</option>
+          </select>
+          <select id="modality">
+            <option value="">Modalidade (todas)</option>
+            <option value="remoto">remoto</option>
+            <option value="remoto_brasil">remoto_brasil</option>
+            <option value="hibrido">hibrido</option>
+            <option value="presencial">presencial</option>
+          </select>
+          <select id="mode">
+            <option value="recommended">recommended (≥60)</option>
+            <option value="all">todas (/jobs)</option>
+            <option value="search">busca textual</option>
+          </select>
+        </div>
+        <div class="row">
+          <label class="small" style="display:flex;gap:6px;align-items:center">Threshold <input id="thr" type="number" min="0" max="100" value="60" style="width:80px" /></label>
+          <label class="small" style="display:flex;gap:6px;align-items:center">Limit <input id="limit" type="number" min="1" max="100" value="20" style="width:80px" /></label>
+          <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="auto" checked /> auto-refresh</label>
+        </div>
+        <div class="log" id="log">Pronto. Use os botões acima ou aguarde o auto-refresh.\nDica: primeiro clique em “Ingerir todas” se o banco estiver vazio.</div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="hd"><h2>Vagas</h2><span class="small mono" id="jobsMeta">—</span></div>
+    <div class="bd">
+      <div id="jobs" class="jobs"></div>
+      <div id="empty" class="empty" style="display:none">Nenhuma vaga encontrada. Tente “Preview demo” para ver scoring sem persistir, ou “Ingerir todas”.</div>
+    </div>
+  </section>
+
+  <section class="card" style="margin:18px 0">
+    <div class="hd"><h2>Preview (sem persistir)</h2><span class="small">GET /sources/preview/{name}</span></div>
+    <div class="bd">
+      <div id="preview" class="jobs"></div>
+      <div id="previewEmpty" class="small" style="color:var(--muted)">Clique em Preview demo / arbeitnow para ver normalização + scoring em tempo real.</div>
+    </div>
+  </section>
+
+  <footer class="small" style="text-align:center;padding:18px;color:var(--muted)">
+    API em <span class="mono">http://localhost:8000</span> • Frontend em <span class="mono">/ui</span> • Docs <a href="/docs">/docs</a> • Terminal: <span class="mono">curl http://localhost:8000/jobs/recommended</span>
+  </footer>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const logEl = $("#log");
+function log(msg){
+  const t = new Date().toLocaleTimeString();
+  logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent;
+}
+function toast(msg){
+  const el=$("#toast"); el.textContent=msg; el.style.display="block";
+  setTimeout(()=>el.style.display="none", 2600);
+}
+async function jget(url){
+  const r = await fetch(url);
+  const text = await r.text();
+  let data;
+  try{ data = JSON.parse(text); } catch{ data = text; }
+  if(!r.ok) throw new Error(typeof data==="string"? data : (data.detail||JSON.stringify(data)));
+  return data;
+}
+async function jpost(url, body){
+  const r = await fetch(url, {method:"POST", headers: body?{"Content-Type":"application/json"}:{}, body: body?JSON.stringify(body):undefined});
+  const text = await r.text();
+  let data; try{ data=JSON.parse(text)}catch{data=text}
+  if(!r.ok) throw new Error(typeof data==="string"? data : JSON.stringify(data));
+  return data;
+}
+function fmtScore(c){ return c||"—"; }
+function pillClass(c){
+  return c||"ignorar";
+}
+function jobCard(j, score){
+  // j pode vir de /jobs (tem job.* + score via join?) ou /sources/preview (estrutura diferente)
+  // Normaliza
+  const title = j.title || j.name || "Sem título";
+  const company = j.company_name || j.company || (j.company && j.company.name) || "";
+  const loc = j.location || "—";
+  const modality = j.modality || "—";
+  const seniority = j.seniority || "—";
+  const url = j.url || "#";
+  const techs = j.technologies || [];
+  const desc = j.description || "";
+  const first = j.first_seen_at || j.created_at || "";
+  // scoring tenta pegar de várias fontes
+  let final = null, cls=null;
+  if(score && typeof score.final_score!=="undefined"){ final=score.final_score; cls=score.classification; }
+  else if(j.score && typeof j.score.final_score!=="undefined"){ final=j.score.final_score; cls=j.score.classification; }
+  else if(j.final_score!=="undefined"){ final=j.final_score; cls=j.classification; }
+  else if(j.score_value){ final=j.score_value; cls=j.classification; }
+  // preview: score e classification direto
+  if(j.score && typeof j.score==="number"){ final=j.score; cls=j.classification; }
+  if(typeof j.score==="object" && j.score && j.score.final_score) {final=j.score.final_score; cls=j.score.classification;}
+  const scoreNum = (final!==null && final!=="")? final : (j.score?.final_score ?? "—");
+  const clsStr = cls || j.classification || j.score?.classification || "—";
+  const techHtml = (techs||[]).slice(0,6).map(t=>`<span class="tech">${t}</span>`).join("");
+  const descShort = (desc||"").slice(0,180);
+  return `<article class="job">
+    <div class="top">
+      <h3>${title}${company?` — <span style="font-weight:600;color:#374151">${company}</span>`:""}</h3>
+      <span class="pill ${pillClass(clsStr)}">${scoreNum}/100 • ${fmtScore(clsStr)}</span>
+    </div>
+    <div class="meta"><span class="pill">${loc}</span><span class="pill">${modality}</span><span class="pill">${seniority}</span></div>
+    ${techHtml?`<div class="techs">${techHtml}</div>`:""}
+    ${descShort?`<div class="desc">${descShort}${desc.length>180?"…":""}</div>`:""}
+    <div class="small">ID: <span class="mono">${j.id||j.fingerprint&&j.fingerprint.slice(0,12)+"… "||"—"}</span> ${first?`• ${new Date(first).toLocaleString()}`:""}</div>
+    <div class="row"><a class="btn small secondary" href="${url}" target="_blank" rel="noopener">Candidatura ↗</a><span class="small mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${url}</span></div>
+  </article>`;
+}
+function renderJobs(container, items, getScore){
+  if(!items || !items.length){
+    container.innerHTML="";
+    return false;
+  }
+  container.innerHTML = items.map(it=>{
+    // /jobs returns {items:[Job], total}
+    // /jobs/recommended same
+    // /sources/preview returns {preview:[{title, company, score, classification,...}]}
+    // unify:
+    if(it.title && (it.score!==undefined || it.classification || it.company)){
+      // preview shape: title, company, score, classification, technologies, etc.
+      const fake = {...it, technologies: it.technologies||[], description: it.description||""};
+      const sc = {final_score: it.score, classification: it.classification};
+      return jobCard(fake, sc);
+    }
+    // job shape from DB: may have company as object or company_name
+    // try to extract job + score
+    // if item is {title, company, ... , score: {final_score}}
+    return jobCard(it, it.score || it);
+  }).join("");
+  return true;
+}
+async function refreshHealth(){
+  try{
+    const h = await jget("/health");
+    $("#envBadge").textContent = h.env || "ok";
+    $("#healthBadge").textContent = "ok • " + (h.version||"0.1.0");
+    $("#healthBadge").className="badge ok";
+    $("#dot").style.background="#10b981";
+  }catch(e){
+    $("#healthBadge").textContent="offline";
+    $("#healthBadge").className="badge err";
+    $("#dot").style.background="#ef4444";
+  }
+  try{
+    const d = await jget("/health/detailed");
+    // details not shown, just log
+  }catch{}
+}
+async function refreshObservability(){
+  try{
+    const o = await jget("/observability");
+    $("#kpiTotal").textContent = o.jobs_total ?? o.total ?? "0";
+    $("#kpiHigh").textContent  = (o.by_classification?.excelente||0)+(o.by_classification?.muito_relevante||0) || o.highly_relevant || "0";
+    $("#kpiRel").textContent   = o.by_classification?.relevante ?? o.relevant ?? "0";
+    $("#kpiDisc").textContent  = o.by_classification?.ignorar ?? o.discarded ?? "0";
+    $("#lastUpdate").textContent = new Date().toLocaleTimeString();
+    if(o.recent_runs) log(`observability: ${o.jobs_total} total • ${o.jobs_scored} scored`);
+  }catch(e){
+    // fallback to /metrics text
+    try{
+      const t = await fetch("/metrics").then(r=>r.text());
+      const m = t.match(/job_finder_jobs_total (\d+)/);
+      if(m) $("#kpiTotal").textContent=m[1];
+    }catch{}
+  }
+}
+async function refreshLLM(){
+  try{
+    const s = await jget("/scoring/llm/status");
+    $("#llmBox").textContent = `LLM: ${s.provider_class} • ${s.llm_provider} • enabled=${s.is_enabled} • ${s.ollama_model} @ ${s.ollama_base_url}`;
+  }catch(e){ $("#llmBox").textContent="LLM: erro ao consultar /scoring/llm/status"; }
+  try{
+    const sc = await jget("/sources");
+    $("#srcBox").textContent = "sources: " + (sc.sources||[]).map(x=>x.name).join(", ");
+  }catch{}
+}
+let lastMode="recommended";
+async function loadJobs(){
+  const mode = $("#mode").value;
+  const limit = parseInt($("#limit").value||"20");
+  const thr = parseInt($("#thr").value||"60");
+  const sen = $("#seniority").value;
+  const mod = $("#modality").value;
+  const q = $("#q").value.trim();
+  $("#jobsMeta").textContent = `mode=${mode} • thr=${thr} • limit=${limit}`;
+  try{
+    let data, items=[];
+    if(mode==="search" && q.length>=2){
+      data = await jget(`/jobs/search/text?q=${encodeURIComponent(q)}`);
+      items = data.items||[];
+      lastMode="search";
+      log(`search "${q}": ${items.length} resultados`);
+    }else if(mode==="recommended"){
+      const url = `/jobs/recommended?threshold=${thr}&limit=${limit}`;
+      data = await jget(url);
+      items = data.items||data||[];
+      lastMode="recommended";
+      log(`recommended ≥${thr}: ${items.length}/${data.total||items.length}`);
+    }else{
+      let url = `/jobs?limit=${limit}&offset=0`;
+      if(sen) url+=`&seniority=${encodeURIComponent(sen)}`;
+      if(mod) url+=`&modality=${encodeURIComponent(mod)}`;
+      data = await jget(url);
+      items = data.items||[];
+      lastMode="all";
+      log(`list jobs: ${items.length}/${data.total||items.length} (sen=${sen||"*" }, mod=${mod||"*"})`);
+    }
+    const ok = renderJobs($("#jobs"), items);
+    $("#empty").style.display = ok?"none":"block";
+    $("#countBadge").textContent = `${items.length} vagas`;
+  }catch(e){
+    log(`loadJobs erro: ${e.message}`);
+    toast("Erro ao carregar vagas: "+e.message);
+    $("#jobs").innerHTML="";
+    $("#empty").style.display="block";
+  }
+}
+async function searchNow(){
+  $("#mode").value="search";
+  await loadJobs();
+}
+async function ingestAll(){
+  const btn=$("#btnIngest"); btn.disabled=true; btn.textContent="ingerindo…";
+  try{
+    log("POST /sources/ingest …");
+    const r = await jpost("/sources/ingest", null);
+    log(`ingest: ${JSON.stringify(r).slice(0,600)}`);
+    toast("Ingestão concluída");
+    await refreshObservability();
+    await loadJobs();
+  }catch(e){ log(`ingest erro: ${e.message}`); toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent="Ingerir todas (POST /sources/ingest)"; }
+}
+async function workerRun(){
+  const btn=$("#btnWorker"); btn.disabled=true; btn.textContent="rodando…";
+  try{
+    log("POST /worker/run …");
+    const r = await jpost("/worker/run", null);
+    log(`worker/run: ${JSON.stringify(r).slice(0,600)}`);
+    toast("Pipeline executado");
+    await refreshObservability();
+    await loadJobs();
+  }catch(e){ log(`worker erro: ${e.message}`); toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent="Rodar pipeline (POST /worker/run)"; }
+}
+async function preview(name){
+  try{
+    log(`GET /sources/preview/${name} …`);
+    const r = await jget(`/sources/preview/${name}`);
+    const items = r.preview||[];
+    log(`preview ${name}: collected=${r.collected} preview=${items.length}`);
+    renderJobs($("#preview"), items);
+    $("#previewEmpty").style.display = items.length?"none":"block";
+    // também loga scores
+    items.slice(0,3).forEach(it=> log(` • ${it.title} — ${it.score}/100 ${it.classification}`));
+  }catch(e){ log(`preview erro: ${e.message}`); toast(e.message); }
+}
+async function digest(){
+  try{
+    const d = await jget("/notifications/digest");
+    $("#digestBox").textContent = `Digest: total=${d.total} altamente=${d.highly_relevant} relevantes=${d.relevant} descartadas=${d.discarded}` + (d.top?` • top: ${d.top.map(x=>x.title).join(" | ").slice(0,120)}`:"");
+    log(`digest: ${JSON.stringify(d).slice(0,500)}`);
+  }catch(e){ log(`digest erro: ${e.message}`); }
+}
+
+$("#btnRefresh").addEventListener("click", async()=>{ await refreshHealth(); await refreshObservability(); await refreshLLM(); await loadJobs(); });
+$("#btnSearch").addEventListener("click", searchNow);
+$("#q").addEventListener("keydown", e=>{ if(e.key==="Enter") searchNow(); });
+$("#btnClear").addEventListener("click", ()=>{ $("#q").value=""; $("#seniority").value=""; $("#modality").value=""; $("#mode").value="recommended"; loadJobs(); });
+$("#btnIngest").addEventListener("click", ingestAll);
+$("#btnWorker").addEventListener("click", workerRun);
+$("#btnPreviewDemo").addEventListener("click", ()=>preview("demo"));
+$("#btnPreviewArbeit").addEventListener("click", ()=>preview("arbeitnow"));
+$("#btnDigest").addEventListener("click", digest);
+$("#mode").addEventListener("change", loadJobs);
+$("#thr").addEventListener("change", loadJobs);
+$("#limit").addEventListener("change", loadJobs);
+$("#seniority").addEventListener("change", ()=>{ $("#mode").value="all"; loadJobs(); });
+$("#modality").addEventListener("change", ()=>{ $("#mode").value="all"; loadJobs(); });
+
+// boot
+refreshHealth(); refreshObservability(); refreshLLM(); loadJobs(); preview("demo");
+setInterval(()=>{ if($("#auto").checked){ refreshObservability(); loadJobs(); }}, 60000);
+setInterval(refreshHealth, 30000);
+</script>
+</body>
+</html>

@@ -71,6 +71,7 @@ def start_scheduler(block: bool = True):
 
     if block:
         logger.info("Scheduler em modo blocking, Ctrl+C para sair")
+
         # Graceful shutdown
         def _handle(sig, frame):
             logger.info("Scheduler stopping...")

@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 from app.models.search_query import SearchQuery
 
 
-def load_queries_from_yaml(path: str | Path = "config/search_queries.yaml") -> dict[str, list[dict[str, Any]]]:
+def load_queries_from_yaml(
+    path: str | Path = "config/search_queries.yaml",
+) -> dict[str, list[dict[str, Any]]]:
     p = Path(path)
     if not p.exists():
         return {"simple": [], "boolean": []}

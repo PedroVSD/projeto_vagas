@@ -49,8 +49,13 @@ def test_notification(payload: dict | None = None, db: Session = Depends(get_db)
     if not providers:
         return {
             "enabled": False,
-            "message": "Nenhum provider habilitado (configure TELEGRAM_BOT_TOKEN/CHAT_ID ou SMTP). Payload de exemplo seria enviado.",
-            "example_payload": payload or {"title": "Teste", "company": "Demo", "url": "https://example.com"},
+            "message": (
+                "Nenhum provider habilitado "
+                "(configure TELEGRAM_BOT_TOKEN/CHAT_ID ou SMTP). "
+                "Payload de exemplo seria enviado."
+            ),
+            "example_payload": payload
+            or {"title": "Teste", "company": "Demo", "url": "https://example.com"},
         }
 
     test_payload = payload or {
@@ -61,7 +66,11 @@ def test_notification(payload: dict | None = None, db: Session = Depends(get_db)
         "modality": "remoto_brasil",
         "seniority": "junior",
         "technologies": ["Python", "SQL", "Airflow"],
-        "score": {"final_score": 87, "classification": "muito_relevante", "area_breakdown": {"area": "data_engineering"}},
+        "score": {
+            "final_score": 87,
+            "classification": "muito_relevante",
+            "area_breakdown": {"area": "data_engineering"},
+        },
     }
     results = {}
     for p in providers:

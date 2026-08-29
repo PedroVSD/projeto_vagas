@@ -1,11 +1,16 @@
 from unittest.mock import Mock, patch
 
-from app.scoring.llm import LLMClassification, _parse_and_validate, get_llm_provider
 from app.core.config import get_settings
+from app.scoring.llm import LLMClassification, _parse_and_validate, get_llm_provider
 
 
 def test_parse_and_validate_ok():
-    raw = '{"relevance_score": 80, "seniority_match": 90, "area_match": 80, "technology_match": 85, "remote_match": 100, "overall_match": 87, "recommendation": "apply", "reason": "ok", "missing_requirements": [], "matching_skills": ["Python"], "concerns": []}'
+    raw = (
+        '{"relevance_score": 80, "seniority_match": 90, "area_match": 80, '
+        '"technology_match": 85, "remote_match": 100, "overall_match": 87, '
+        '"recommendation": "apply", "reason": "ok", '
+        '"missing_requirements": [], "matching_skills": ["Python"], "concerns": []}'
+    )
     res = _parse_and_validate(raw)
     assert isinstance(res, LLMClassification)
     assert res.overall_match == 87
@@ -13,7 +18,12 @@ def test_parse_and_validate_ok():
 
 
 def test_parse_and_validate_markdown():
-    raw = '```json\n{"relevance_score": 80, "seniority_match": 90, "area_match": 80, "technology_match": 85, "remote_match": 100, "overall_match": 87, "recommendation": "apply", "reason": "ok", "missing_requirements": [], "matching_skills": [], "concerns": []}\n```'
+    raw = (
+        '```json\n{"relevance_score": 80, "seniority_match": 90, '
+        '"area_match": 80, "technology_match": 85, "remote_match": 100, '
+        '"overall_match": 87, "recommendation": "apply", "reason": "ok", '
+        '"missing_requirements": [], "matching_skills": [], "concerns": []}\n```'
+    )
     res = _parse_and_validate(raw)
     assert res is not None
     assert res.overall_match == 87
@@ -38,7 +48,12 @@ def test_ollama_provider_mocked():
     from app.scoring.llm import OllamaProvider
 
     p = OllamaProvider("http://localhost:11434", "llama3.1:8b")
-    fake_json = '{"relevance_score": 80, "seniority_match": 90, "area_match": 80, "technology_match": 85, "remote_match": 100, "overall_match": 85, "recommendation": "apply", "reason": "boa", "missing_requirements": [], "matching_skills": ["Python"], "concerns": []}'
+    fake_json = (
+        '{"relevance_score": 80, "seniority_match": 90, "area_match": 80, '
+        '"technology_match": 85, "remote_match": 100, "overall_match": 85, '
+        '"recommendation": "apply", "reason": "boa", '
+        '"missing_requirements": [], "matching_skills": ["Python"], "concerns": []}'
+    )
     with patch("app.scoring.llm.httpx.Client") as mock_client:
         mock_resp = Mock()
         mock_resp.json.return_value = {"message": {"content": fake_json}}
@@ -51,7 +66,6 @@ def test_ollama_provider_mocked():
 
 
 def test_score_service_calls_llm_when_candidate():
-    from unittest.mock import MagicMock
 
     from app.services.score_service import score_and_persist
 

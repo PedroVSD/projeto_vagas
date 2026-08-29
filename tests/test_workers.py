@@ -4,7 +4,10 @@ from unittest.mock import Mock, patch
 def test_run_pipeline_mocked():
     from app.workers.runner import run_pipeline
 
-    with patch("app.workers.runner.ingest_all") as mock_ingest, patch("app.workers.runner.SessionLocal") as mock_session_cls:
+    with (
+        patch("app.workers.runner.ingest_all") as mock_ingest,
+        patch("app.workers.runner.SessionLocal") as mock_session_cls,
+    ):
         mock_db = Mock()
         mock_session_cls.return_value = mock_db
         # mock ingest_all retorna métricas
@@ -26,12 +29,20 @@ def test_run_pipeline_mocked():
 def test_run_digest_no_provider():
     from app.workers.runner import run_digest
 
-    with patch("app.workers.runner.SessionLocal") as mock_session_cls, patch(
-        "app.notifications.service.get_enabled_providers", return_value=[]
-    ), patch("app.notifications.service.build_digest") as mock_digest:
+    with (
+        patch("app.workers.runner.SessionLocal") as mock_session_cls,
+        patch("app.notifications.service.get_enabled_providers", return_value=[]),
+        patch("app.notifications.service.build_digest") as mock_digest,
+    ):
         mock_db = Mock()
         mock_session_cls.return_value = mock_db
-        mock_digest.return_value = {"total": 10, "highly_relevant": 2, "relevant": 3, "discarded": 5, "top": []}
+        mock_digest.return_value = {
+            "total": 10,
+            "highly_relevant": 2,
+            "relevant": 3,
+            "discarded": 5,
+            "top": [],
+        }
 
         result = run_digest()
         assert result["total"] == 10
@@ -64,7 +75,10 @@ def test_run_pipeline_via_api_mocked():
     from app.main import app
 
     c = TestClient(app)
-    with patch("app.workers.runner.ingest_all", return_value=[{"source": "demo", "collected": 1, "new": 1, "duplicates": 0, "errors": 0}]):
+    with patch(
+        "app.workers.runner.ingest_all",
+        return_value=[{"source": "demo", "collected": 1, "new": 1, "duplicates": 0, "errors": 0}],
+    ):
         with patch("app.workers.runner.SessionLocal") as mock_session_cls:
             mock_db = Mock()
             mock_session_cls.return_value = mock_db

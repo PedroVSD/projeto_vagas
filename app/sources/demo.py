@@ -11,14 +11,16 @@ from app.services.normalization import (
 )
 from app.sources.base import JobSource, NormalizedJob, RawJob
 
-
 DEMO_JOBS: list[dict] = [
     {
         "external_id": "demo-1",
         "title": "Junior Data Engineer",
         "company_name": "Empresa Demo",
         "url": "https://example.com/jobs/1",
-        "description": "Vaga Júnior com Python, SQL, Airflow e Docker - remoto Brasil. Requisitos: Python, SQL, Airflow.",
+        "description": (
+            "Vaga Júnior com Python, SQL, Airflow e Docker - remoto Brasil. "
+            "Requisitos: Python, SQL, Airflow."
+        ),
         "location": "Brasil - Remoto",
     },
     {
@@ -26,7 +28,9 @@ DEMO_JOBS: list[dict] = [
         "title": "Estágio MLOps",
         "company_name": "Tech Startup",
         "url": "https://example.com/jobs/2",
-        "description": "Estágio em MLOps: Python, Docker, Kubernetes, MLflow, AWS. Modalidade remota.",
+        "description": (
+            "Estágio em MLOps: Python, Docker, Kubernetes, MLflow, AWS. Modalidade remota."
+        ),
         "location": "Remoto",
     },
     {
@@ -34,7 +38,9 @@ DEMO_JOBS: list[dict] = [
         "title": "Senior Data Engineer - NÃO RELEVANTE",
         "company_name": "Corp",
         "url": "https://example.com/jobs/3",
-        "description": "Vaga Sênior exige 8+ anos, presencial São Paulo, Java. Não deve pontuar alto.",
+        "description": (
+            "Vaga Sênior exige 8+ anos, presencial São Paulo, Java. Não deve pontuar alto."
+        ),
         "location": "São Paulo, Presencial",
     },
 ]
