@@ -1,7 +1,12 @@
+from app.sources.academia import AcademiaSource
 from app.sources.arbeitnow import ArbeitnowSource
 from app.sources.base import JobSource, NormalizedJob, RawJob
+from app.sources.ciadetalentos import CiaDeTalentosSource
 from app.sources.demo import DemoSource
+from app.sources.eureca import EurecaSource
+from app.sources.linkedin import LinkedinSource
 from app.sources.registry import DEFAULT_SOURCES, get_enabled_sources, get_source_by_name
+from app.sources.vagas import VagasSource
 
 __all__ = [
     "JobSource",
@@ -9,6 +14,11 @@ __all__ = [
     "NormalizedJob",
     "DemoSource",
     "ArbeitnowSource",
+    "LinkedinSource",
+    "VagasSource",
+    "EurecaSource",
+    "CiaDeTalentosSource",
+    "AcademiaSource",
     "DEFAULT_SOURCES",
     "get_enabled_sources",
     "get_source_by_name",

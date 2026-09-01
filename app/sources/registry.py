@@ -2,14 +2,24 @@
 
 from __future__ import annotations
 
+from app.sources.academia import AcademiaSource
 from app.sources.arbeitnow import ArbeitnowSource
 from app.sources.base import JobSource
+from app.sources.ciadetalentos import CiaDeTalentosSource
 from app.sources.demo import DemoSource
+from app.sources.eureca import EurecaSource
+from app.sources.linkedin import LinkedinSource
+from app.sources.vagas import VagasSource
 
-# Instâncias padrão (Fase 2)
+# Instâncias padrão (Fase 2 + expansão perfil Júnior/Estágio BR)
 DEFAULT_SOURCES: list[JobSource] = [
     DemoSource(),
     ArbeitnowSource(),
+    LinkedinSource(),
+    VagasSource(),
+    EurecaSource(),
+    CiaDeTalentosSource(),
+    AcademiaSource(),
 ]
 
 
