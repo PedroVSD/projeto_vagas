@@ -8,10 +8,13 @@ from app.sources.base import JobSource
 from app.sources.ciadetalentos import CiaDeTalentosSource
 from app.sources.demo import DemoSource
 from app.sources.eureca import EurecaSource
+from app.sources.greenhouse import GreenhouseSource
+from app.sources.gupy import GupySource
 from app.sources.linkedin import LinkedinSource
+from app.sources.programathor import ProgramathorSource
 from app.sources.vagas import VagasSource
 
-# Instâncias padrão (Fase 2 + expansão perfil Júnior/Estágio BR)
+# Instâncias padrão (Fase 2 + expansão perfil Júnior/Estágio BR + Gupy/Programathor/Greenhouse)
 DEFAULT_SOURCES: list[JobSource] = [
     DemoSource(),
     ArbeitnowSource(),
@@ -20,6 +23,9 @@ DEFAULT_SOURCES: list[JobSource] = [
     EurecaSource(),
     CiaDeTalentosSource(),
     AcademiaSource(),
+    GupySource(),
+    ProgramathorSource(),
+    GreenhouseSource(),
 ]
 
 
