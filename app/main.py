@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -19,10 +20,36 @@ setup_logging()
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+# Fase 5 - Scheduler opcional dentro da API (monólito modular, sem precisar profile worker)
+# Se SCHEDULER_ENABLED=true, inicia APScheduler em background no lifespan da API.
+_scheduler = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _scheduler
+    if settings.scheduler_enabled:
+        try:
+            from app.workers.scheduler import start_scheduler
+
+            _scheduler = start_scheduler(block=False)
+            logger.info("Scheduler iniciado no lifespan da API (Fase 5)")
+        except Exception as e:
+            logger.warning("Falha ao iniciar scheduler no lifespan: %s", e)
+    yield
+    if _scheduler is not None:
+        try:
+            _scheduler.shutdown(wait=False)
+            logger.info("Scheduler parado no shutdown da API")
+        except Exception:
+            pass
+
+
 app = FastAPI(
     title="Job Finder API",
     description="Agente automatizado de busca, filtragem e notificação de vagas",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

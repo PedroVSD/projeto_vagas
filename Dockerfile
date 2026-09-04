@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copia manifestos primeiro para cache
 COPY pyproject.toml README.md ./
 COPY app ./app
+COPY config ./config
 COPY migrations ./migrations
 COPY alembic.ini ./
 

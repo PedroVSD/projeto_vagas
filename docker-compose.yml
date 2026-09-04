@@ -34,6 +34,7 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app/app
+      - ./config:/app/config
       - ./migrations:/app/migrations
       - ./alembic.ini:/app/alembic.ini
     command: >
@@ -79,8 +80,10 @@ services:
     volumes:
       - ./app:/app/app
       - ./config:/app/config
+      - ./migrations:/app/migrations
+      - ./alembic.ini:/app/alembic.ini
     command: >
-      bash -c "uv run python -m app.workers.scheduler"
+      bash -c "uv run alembic upgrade head && uv run python -m app.workers.scheduler"
     profiles: ["scheduler"]
 
   redis:
