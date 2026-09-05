@@ -17,8 +17,6 @@ from app.scoring.heuristic import score_job
 
 logger = logging.getLogger(__name__)
 
-# Throttling LLM - 1 chamada a cada 5 minutos (300s) para respeitar rate limit Ollama Cloud
-_LLM_THROTTLE_SECONDS = 300
 _last_llm_call: float = 0.0
 
 
@@ -37,22 +35,35 @@ def score_and_persist(db: Session, job: Job) -> JobScore:
     llm_score_val: int | None = None
     llm_payload: dict | None = None
     s = get_settings()
-    # só chama LLM se habilitado, heuristic >= threshold e filtros passaram + throttling 5min
+    # só chama LLM se habilitado, heuristic >= threshold e filtros passaram + throttling (yaml throttling.llm_throttle_seconds tem prioridade)
     threshold = s.score_threshold
     if s.llm_enabled and result["heuristic_score"] >= threshold:
-        # throttling: cada vaga LLM a cada 5 minutos (não bloqueia, pula se dentro da janela)
         import time
+        from pathlib import Path
+
+        import yaml
 
         global _last_llm_call
+        # yaml tem prioridade sobre .env
+        throttle = s.llm_throttle_seconds
+        try:
+            yp = Path("config/search_queries.yaml")
+            if yp.exists():
+                ydata = yaml.safe_load(yp.read_text(encoding="utf-8")) or {}
+                throttle = ydata.get("throttling", {}).get("llm_throttle_seconds", throttle)
+        except Exception:
+            pass
         now = time.time()
-        if now - _last_llm_call < _LLM_THROTTLE_SECONDS:
-            wait = int(_LLM_THROTTLE_SECONDS - (now - _last_llm_call))
+        if throttle > 0 and now - _last_llm_call < throttle:
+            wait = int(throttle - (now - _last_llm_call))
             logger.info(
-                "LLM throttling: pulando LLM job %s (aguardar %ss, última há %ss)",
+                "LLM throttling: pulando LLM job %s (yaml %ss, aguardar %ss) - mantém heuristic",
                 job.id,
+                throttle,
                 wait,
-                int(now - _last_llm_call),
             )
+            # pula LLM mas mantém pipeline rápido - telegram 1min continua
+            llm_payload = None
         else:
             _last_llm_call = now
             try:

@@ -13,8 +13,8 @@ from app.notifications.base import NotificationProvider
 
 logger = logging.getLogger(__name__)
 
-# Telegram throttling - 1 mensagem por minuto (60s)
-_TELEGRAM_THROTTLE_SECONDS = 60
+# Telegram throttling - 1 mensagem por minuto (configurável via LLM throttling + env)
+_TELEGRAM_THROTTLE_SECONDS_DEFAULT = 60
 _last_telegram_send: float = 0.0
 
 
@@ -34,13 +34,27 @@ class TelegramProvider(NotificationProvider):
             logger.info("Telegram disabled (sem TELEGRAM_BOT_TOKEN/CHAT_ID)")
             return False
 
-        # throttling 1min entre mensagens
+        # throttling 1min entre mensagens - yaml throttling.telegram_throttle_seconds tem prioridade
         global _last_telegram_send
+        from pathlib import Path
+
+        import yaml
+
+        from app.core.config import get_settings as _get_s
+
+        try:
+            throttle = _get_s().telegram_throttle_seconds
+            yp = Path("config/search_queries.yaml")
+            if yp.exists():
+                ydata = yaml.safe_load(yp.read_text(encoding="utf-8")) or {}
+                throttle = ydata.get("throttling", {}).get("telegram_throttle_seconds", throttle)
+        except Exception:
+            throttle = _TELEGRAM_THROTTLE_SECONDS_DEFAULT
         now = time.time()
         elapsed = now - _last_telegram_send
-        if _last_telegram_send > 0 and elapsed < _TELEGRAM_THROTTLE_SECONDS:
-            wait = _TELEGRAM_THROTTLE_SECONDS - elapsed
-            logger.info("Telegram throttling: aguardando %.1fs para próxima mensagem", wait)
+        if _last_telegram_send > 0 and elapsed < throttle:
+            wait = throttle - elapsed
+            logger.info("Telegram throttling: aguardando %.1fs para próxima mensagem (yaml %ss)", wait, throttle)
             time.sleep(wait)
 
         from app.notifications.formatting import format_job_message

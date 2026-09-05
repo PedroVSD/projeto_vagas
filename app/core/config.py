@@ -76,9 +76,21 @@ class Settings(BaseSettings):
     scheduler_collect_on_start: bool = Field(default=False, description="Executa coleta ao iniciar")
 
     # Display - data/hora brasileira (config/search_queries.yaml display)
-    display_timezone: str = Field(default="America/Sao_Paulo", description="IANA timezone p/ notificações")
-    display_date_format: str = Field(default="%d/%m/%Y às %H:%M", description="strftime p/ Data encontrada")
+    display_timezone: str = Field(
+        default="America/Sao_Paulo", description="IANA timezone p/ notificações"
+    )
+    display_date_format: str = Field(
+        default="%d/%m/%Y às %H:%M", description="strftime p/ Data encontrada"
+    )
     display_locale: str = Field(default="pt_BR")
+
+    # Throttling - yaml config/search_queries.yaml throttling tem prioridade sobre env
+    llm_throttle_seconds: int = Field(
+        default=300, ge=0, description="Segundos entre chamadas LLM (yaml throttling.llm_throttle_seconds tem prioridade)"
+    )
+    telegram_throttle_seconds: int = Field(
+        default=60, ge=0, description="Segundos entre mensagens Telegram (yaml throttling.telegram_throttle_seconds tem prioridade)"
+    )
 
     # Observabilidade (Fase 7)
     log_format: str = Field(default="text", description="text ou json")

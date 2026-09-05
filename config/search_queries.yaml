@@ -181,7 +181,21 @@ display:
   date_format: "%d/%m/%Y às %H:%M"
   locale: "pt_BR"
 
+# throttling - controle de rate limit (editável sem mudar código, sem precisar .env)
+# LLM 5min e Telegram 1min conforme solicitado. Os tempos estão em segundos
+throttling:
+  llm_throttle_seconds: 20
+  telegram_throttle_seconds: 10
+
+# scheduler - intervalo de coleta (sem ser sensível, fica no yaml)
+scheduler:
+  enabled: true
+  interval_minutes: 60
+  collect_on_start: false
+  digest_enabled: true
+  digest_time: "08:00"
+
 # thresholds
 settings:
-  min_score_threshold: 60
+  min_score_threshold: 40
   immediate_threshold: 90
