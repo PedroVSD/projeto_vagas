@@ -15,8 +15,8 @@ from app.sources.programathor import ProgramathorSource
 from app.sources.vagas import VagasSource
 
 # Instâncias padrão (Fase 2 + expansão perfil Júnior/Estágio BR + Gupy/Programathor/Greenhouse)
+# Demo removido - era mock p/ testes, não deve poluir produção
 DEFAULT_SOURCES: list[JobSource] = [
-    DemoSource(),
     ArbeitnowSource(),
     LinkedinSource(),
     VagasSource(),

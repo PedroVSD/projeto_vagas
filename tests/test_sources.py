@@ -29,9 +29,14 @@ def test_demo_fingerprint_dedup():
 
 
 def test_registry():
-    assert get_source_by_name("demo") is not None
+    # demo removido do DEFAULT_SOURCES (mock só p/ testes unitários, não produção)
     assert get_source_by_name("arbeitnow") is not None
+    assert get_source_by_name("gupy") is not None
     assert get_source_by_name("inexistente") is None
+    # DemoSource ainda importável mas não no registry padrão
+    from app.sources.demo import DemoSource
+
+    assert DemoSource().name == "demo"
 
 
 def test_arbeitnow_normalize_mocked():

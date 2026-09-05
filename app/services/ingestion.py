@@ -93,6 +93,10 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                                 "classification": score.classification,
                                 "area_breakdown": score.area_breakdown,
                                 "penalties": score.penalties,
+                                "tech_breakdown": score.tech_breakdown,
+                                "llm": score.tech_breakdown.get("llm") if isinstance(score.tech_breakdown, dict) else None,
+                                "heuristic_score": score.heuristic_score,
+                                "llm_score": score.llm_score,
                             },
                         )
                     except Exception as ne:
@@ -134,6 +138,10 @@ def ingest_source(db: Session, source: JobSource) -> dict:
                                 "classification": score.classification,
                                 "area_breakdown": score.area_breakdown,
                                 "penalties": score.penalties,
+                                "tech_breakdown": score.tech_breakdown,
+                                "llm": score.tech_breakdown.get("llm") if isinstance(score.tech_breakdown, dict) else None,
+                                "heuristic_score": score.heuristic_score,
+                                "llm_score": score.llm_score,
                             },
                         )
                     except Exception as ne:

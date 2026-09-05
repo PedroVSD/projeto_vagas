@@ -62,6 +62,16 @@ def notify_job(
         # ainda cria registro pendente
         providers = []
 
+    from app.notifications.formatting import _format_br_date
+
+    # job.first_seen_at pode ser datetime (produção) ou string (teste mock)
+    _raw_dt = job.first_seen_at
+    _iso = None
+    try:
+        _iso = _raw_dt.isoformat() if hasattr(_raw_dt, "isoformat") else str(_raw_dt) if _raw_dt else None
+    except Exception:
+        _iso = str(_raw_dt) if _raw_dt else None
+
     payload = {
         "title": job.title,
         "company": job.company.name if job.company else "Empresa",
@@ -71,7 +81,8 @@ def notify_job(
         "modality": job.modality,
         "seniority": job.seniority,
         "technologies": job.technologies,
-        "first_seen_at": str(job.first_seen_at),
+        "first_seen_at": _format_br_date(_raw_dt),
+        "first_seen_at_iso": _iso,
         "description": job.description,
         "score": score,
     }

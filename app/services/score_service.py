@@ -17,6 +17,10 @@ from app.scoring.heuristic import score_job
 
 logger = logging.getLogger(__name__)
 
+# Throttling LLM - 1 chamada a cada 5 minutos (300s) para respeitar rate limit Ollama Cloud
+_LLM_THROTTLE_SECONDS = 300
+_last_llm_call: float = 0.0
+
 
 def score_and_persist(db: Session, job: Job) -> JobScore:
     job_dict = {
@@ -33,54 +37,64 @@ def score_and_persist(db: Session, job: Job) -> JobScore:
     llm_score_val: int | None = None
     llm_payload: dict | None = None
     s = get_settings()
-    # só chama LLM se habilitado, heuristic >= threshold e filtros passaram
+    # só chama LLM se habilitado, heuristic >= threshold e filtros passaram + throttling 5min
     threshold = s.score_threshold
     if s.llm_enabled and result["heuristic_score"] >= threshold:
-        try:
-            from app.scoring.llm import get_llm_provider
+        # throttling: cada vaga LLM a cada 5 minutos (não bloqueia, pula se dentro da janela)
+        import time
 
-            provider = get_llm_provider()
-            if provider.is_enabled():
-                # enriquece payload com campos que o LLM espera (§8)
-                llm_job = {
-                    "title": job.title,
-                    "company": job.company.name if job.company else "",
-                    "location": job.location,
-                    "modality": job.modality,
-                    "seniority": job.seniority,
-                    "description": job.description,
-                    "requirements": job.description,
-                    "technologies": job.technologies,
-                    "url": job.url,
-                }
-                llm_res = provider.classify(llm_job)
-                if llm_res:
-                    llm_score_val = llm_res.overall_match
-                    llm_payload = llm_res.model_dump()
-                    # final = média ponderada heuristic 70% + llm 30%
-                    # LLM não controla diretamente, mas refina
-                    final = int(round(result["heuristic_score"] * 0.7 + llm_score_val * 0.3))
-                    result["final_score"] = max(0, min(100, final))
-                    # se LLM recomendar ignore mas heuristic alto, mantém heuristic
-                    if llm_res.recommendation == "ignore" and result["heuristic_score"] >= 75:
-                        result["final_score"] = result["heuristic_score"]
+        global _last_llm_call
+        now = time.time()
+        if now - _last_llm_call < _LLM_THROTTLE_SECONDS:
+            wait = int(_LLM_THROTTLE_SECONDS - (now - _last_llm_call))
+            logger.info(
+                "LLM throttling: pulando LLM job %s (aguardar %ss, última há %ss)",
+                job.id,
+                wait,
+                int(now - _last_llm_call),
+            )
+        else:
+            _last_llm_call = now
+            try:
+                from app.scoring.llm import get_llm_provider
+
+                provider = get_llm_provider()
+                if provider.is_enabled():
+                    llm_job = {
+                        "title": job.title,
+                        "company": job.company.name if job.company else "",
+                        "location": job.location,
+                        "modality": job.modality,
+                        "seniority": job.seniority,
+                        "description": job.description,
+                        "requirements": job.description,
+                        "technologies": job.technologies,
+                        "url": job.url,
+                    }
+                    llm_res = provider.classify(llm_job)
+                    if llm_res:
+                        llm_score_val = llm_res.overall_match
+                        llm_payload = llm_res.model_dump()
+                        final = int(round(result["heuristic_score"] * 0.7 + llm_score_val * 0.3))
+                        result["final_score"] = max(0, min(100, final))
+                        if llm_res.recommendation == "ignore" and result["heuristic_score"] >= 75:
+                            result["final_score"] = result["heuristic_score"]
+                            logger.info(
+                                "LLM recommend ignore mas heuristic alto, mantendo %s",
+                                result["final_score"],
+                            )
+                        result["llm"] = llm_payload
                         logger.info(
-                            "LLM recommend ignore mas heuristic alto, mantendo %s",
+                            "LLM score job %s: heuristic %s -> final %s (llm %s)",
+                            job.id,
+                            result["heuristic_score"],
                             result["final_score"],
+                            llm_score_val,
                         )
-                    # anexa llm no breakdown para auditoria
-                    result["llm"] = llm_payload
-                    logger.info(
-                        "LLM score job %s: heuristic %s -> final %s (llm %s)",
-                        job.id,
-                        result["heuristic_score"],
-                        result["final_score"],
-                        llm_score_val,
-                    )
-                else:
-                    logger.debug("LLM sem retorno para job %s", job.id)
-        except Exception as e:
-            logger.warning("LLM classify falhou job %s: %s", job.id, e)
+                    else:
+                        logger.debug("LLM sem retorno para job %s", job.id)
+            except Exception as e:
+                logger.warning("LLM classify falhou job %s: %s", job.id, e)
 
     existing = db.query(JobScore).filter(JobScore.job_id == job.id).first()
     if existing:

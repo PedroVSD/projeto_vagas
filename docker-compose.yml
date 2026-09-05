@@ -26,8 +26,6 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/job_finder
       APP_ENV: development
       LOG_LEVEL: INFO
-      OLLAMA_BASE_URL: http://ollama:11434
-      LLM_PROVIDER: auto
     env_file:
       - .env
     ports:

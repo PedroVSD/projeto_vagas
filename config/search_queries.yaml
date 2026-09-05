@@ -174,6 +174,13 @@ search_profiles:
     - Data Engineering
     - Cloud
 
+# display - formato brasileiro (editável sem mudar código)
+# Usado por app/notifications/formatting.py para "Data encontrada"
+display:
+  timezone: "America/Sao_Paulo"
+  date_format: "%d/%m/%Y às %H:%M"
+  locale: "pt_BR"
+
 # thresholds
 settings:
   min_score_threshold: 60

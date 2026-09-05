@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import httpx
@@ -11,6 +12,10 @@ from app.core.config import get_settings
 from app.notifications.base import NotificationProvider
 
 logger = logging.getLogger(__name__)
+
+# Telegram throttling - 1 mensagem por minuto (60s)
+_TELEGRAM_THROTTLE_SECONDS = 60
+_last_telegram_send: float = 0.0
 
 
 class TelegramProvider(NotificationProvider):
@@ -29,6 +34,15 @@ class TelegramProvider(NotificationProvider):
             logger.info("Telegram disabled (sem TELEGRAM_BOT_TOKEN/CHAT_ID)")
             return False
 
+        # throttling 1min entre mensagens
+        global _last_telegram_send
+        now = time.time()
+        elapsed = now - _last_telegram_send
+        if _last_telegram_send > 0 and elapsed < _TELEGRAM_THROTTLE_SECONDS:
+            wait = _TELEGRAM_THROTTLE_SECONDS - elapsed
+            logger.info("Telegram throttling: aguardando %.1fs para próxima mensagem", wait)
+            time.sleep(wait)
+
         from app.notifications.formatting import format_job_message
 
         subject, body = format_job_message(payload, payload.get("score"))
@@ -39,24 +53,39 @@ class TelegramProvider(NotificationProvider):
         if len(text) > 4000:
             text = text[:4000] + "\n... [cortado]"
 
-        try:
+        # Telegram parse_mode Markdown quebra com caracteres especiais (*_`[) - tenta Markdown, fallback plain
+        def _post(parse_mode: str | None) -> httpx.Response:
+            payload: dict[str, object] = {
+                "chat_id": self.chat_id,
+                "text": text,
+                "disable_web_page_preview": True,
+            }
+            if parse_mode:
+                payload["parse_mode"] = parse_mode
             with httpx.Client(timeout=10) as c:
-                r = c.post(
-                    url,
-                    json={
-                        "chat_id": self.chat_id,
-                        "text": text,
-                        "parse_mode": "Markdown",
-                        "disable_web_page_preview": True,
-                    },
-                )
-                r.raise_for_status()
-                data = r.json()
-                if not data.get("ok"):
-                    logger.warning("Telegram api não ok: %s", data)
-                    return False
-                logger.info("Telegram enviado para chat %s", self.chat_id)
-                return True
+                return c.post(url, json=payload)
+
+        try:
+            # 1ª tentativa: Markdown (formatação **)
+            r = _post("Markdown")
+            if r.status_code == 400:
+                # log corpo do erro para diagnóstico (ex: can't parse entities)
+                try:
+                    err_data = r.json()
+                    logger.warning("Telegram 400 Markdown: %s -> retry plain", err_data)
+                except Exception:
+                    logger.warning("Telegram 400 Markdown text: %s -> retry plain", r.text[:500])
+                # 2ª tentativa: sem parse_mode (plain)
+                r = _post(None)
+            r.raise_for_status()
+            data = r.json()
+            if not data.get("ok"):
+                logger.warning("Telegram api não ok: %s", data)
+                return False
+            logger.info("Telegram enviado para chat %s", self.chat_id)
+            _last_telegram_send = time.time()
+            return True
         except Exception as e:
+            # httpx HTTPStatusError já inclui response body se raise_for_status
             logger.warning("Telegram send falhou: %s", e)
             return False

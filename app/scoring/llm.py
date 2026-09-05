@@ -109,7 +109,8 @@ class OllamaProvider(BaseLLMProvider):
     """
 
     def __init__(self, base_url: str, model: str, timeout: int = 60, api_key: str | None = None):
-        self.base_url = base_url.rstrip("/")
+        # Pega direto do .env sem sanitização - usuário controla URL completa
+        self.base_url = base_url.strip().rstrip("/")
         self.model = model
         self.timeout = timeout
         self.api_key = api_key
@@ -119,7 +120,8 @@ class OllamaProvider(BaseLLMProvider):
 
     def classify(self, job: dict[str, Any]) -> LLMClassification | None:
         prompt = _build_user_prompt(job)
-        payload = {
+        # payloads separados: Ollama nativo vs OpenAI compatível
+        ollama_payload = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -129,16 +131,42 @@ class OllamaProvider(BaseLLMProvider):
             "format": "json",
             "options": {"temperature": 0.2, "num_predict": 800},
         }
-        # Tenta endpoint OpenAI-compatível primeiro,
-        # fallback para /api/chat nativo
-        urls = [
-            f"{self.base_url}/v1/chat/completions",
-            f"{self.base_url}/api/chat",
-        ]
+        openai_payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 800,
+            "response_format": {"type": "json_object"},
+        }
+        # determina URLs e payloads a tentar - corrige http->https para cloud
+        base = self.base_url
+        # Ollama Cloud http -> 405/301 se POST redirecionado, usa https direto
+        if base.startswith("http://ollama.com"):
+            base = base.replace("http://", "https://")
+        if base.endswith(("/api/chat", "/v1/chat/completions")):
+            # se usuário já deu URL completa, tenta as duas variantes a partir do host
+            host = base.replace("/api/chat", "").replace("/v1/chat/completions", "").rstrip("/")
+            urls = [
+                (f"{host}/api/chat", ollama_payload),
+                (f"{host}/v1/chat/completions", openai_payload),
+            ]
+            # prioriza a URL exata que o usuário configurou
+            if base.endswith("/api/chat"):
+                urls = [(base.replace("http://", "https://") if base.startswith("http://ollama.com") else base, ollama_payload)] + [u for u in urls if u[0] != base]
+            else:
+                urls = [(base.replace("http://", "https://") if base.startswith("http://ollama.com") else base, openai_payload)] + [u for u in urls if u[0] != base]
+        else:
+            urls = [
+                (f"{base}/v1/chat/completions", openai_payload),
+                (f"{base}/api/chat", ollama_payload),
+            ]
         last_err: Exception | None = None
-        for url in urls:
+        for url, pl in urls:
             try:
-                resp = self._call(url, payload)
+                resp = self._call(url, pl)
                 if resp:
                     return resp
             except Exception as e:
@@ -153,8 +181,8 @@ class OllamaProvider(BaseLLMProvider):
         headers: dict[str, str] = {}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-        # Adapta payload entre formato OpenAI e Ollama nativo (são quase idênticos para chat)
-        with httpx.Client(timeout=self.timeout) as client:
+        # Cloud http -> https 301 precisa follow_redirects
+        with httpx.Client(timeout=self.timeout, follow_redirects=True) as client:
             r = client.post(url, json=payload, headers=headers or None)
             r.raise_for_status()
             data = r.json()
@@ -174,14 +202,23 @@ class OllamaProvider(BaseLLMProvider):
         return _parse_and_validate(content)
 
     def health_check(self) -> bool:
+        headers: dict[str, str] = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        # usa exatamente a base da .env (sem sanitização) - tenta /api/tags relativo
+        # se base já é .../api/chat, troca sufixo por /api/tags
+        base = self.base_url
+        if base.endswith("/api/chat"):
+            check_base = base[: -len("/api/chat")]
+        elif base.endswith("/v1/chat/completions"):
+            check_base = base[: -len("/v1/chat/completions")]
+        else:
+            check_base = base
         try:
-            headers: dict[str, str] = {}
-            if self.api_key:
-                headers["Authorization"] = f"Bearer {self.api_key}"
-            # Cloud usa https://ollama.com/api/tags (mesmo endpoint)
-            with httpx.Client(timeout=5) as client:
-                r = client.get(f"{self.base_url}/api/tags", headers=headers or None)
-                return r.status_code == 200
+            with httpx.Client(timeout=5, follow_redirects=True) as client:
+                r = client.get(f"{check_base}/api/tags", headers=headers or None)
+                # Ollama Cloud http -> 301 para https, ollama local 200
+                return r.status_code in (200, 301, 302)
         except Exception:
             return False
 
@@ -302,19 +339,27 @@ def get_llm_provider() -> BaseLLMProvider:
             settings.ollama_timeout,
             settings.ollama_api_key,
         )
-        if ollama.health_check():
+        try:
+            ok = ollama.health_check()
+        except Exception as e:
+            logger.debug("Ollama health_check exceção: %s", e)
+            ok = False
+        if ok:
             logger.info(
                 "LLM auto: usando Ollama %s @ %s",
                 settings.ollama_model,
                 settings.ollama_base_url,
             )
             return ollama
+        # fallback OpenAI mesmo que Ollama configurado mas offline
         if settings.openai_api_key:
-            logger.info("LLM auto: Ollama indisponível, usando OpenAI %s", settings.openai_model)
+            # mascarar key no log
+            key_hint = settings.openai_api_key[:7] + "..." if len(settings.openai_api_key) > 7 else "***"
+            logger.info("LLM auto: Ollama offline (%s), usando OpenAI %s key=%s", settings.ollama_base_url, settings.openai_model, key_hint)
             return OpenAIProvider(
                 settings.openai_api_key, settings.openai_model, settings.openai_base_url
             )
-        logger.info("LLM auto: nenhum provider disponível (Ollama offline e sem key) -> disabled")
+        logger.warning("LLM auto: nenhum provider disponível (Ollama %s offline e OPENAI_API_KEY vazia) -> disabled. Configure LLM_PROVIDER=openai ou OLLAMA_BASE_URL", settings.ollama_base_url)
         return DisabledProvider()
 
     logger.warning("llm_provider desconhecido '%s' -> disabled", provider)

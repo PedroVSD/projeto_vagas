@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     )
     scheduler_collect_on_start: bool = Field(default=False, description="Executa coleta ao iniciar")
 
+    # Display - data/hora brasileira (config/search_queries.yaml display)
+    display_timezone: str = Field(default="America/Sao_Paulo", description="IANA timezone p/ notificações")
+    display_date_format: str = Field(default="%d/%m/%Y às %H:%M", description="strftime p/ Data encontrada")
+    display_locale: str = Field(default="pt_BR")
+
     # Observabilidade (Fase 7)
     log_format: str = Field(default="text", description="text ou json")
 
