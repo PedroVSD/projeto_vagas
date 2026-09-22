@@ -198,4 +198,4 @@ scheduler:
 # thresholds
 settings:
   min_score_threshold: 40
-  immediate_threshold: 90
+  immediate_threshold: 70

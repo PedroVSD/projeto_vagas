@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 
@@ -40,7 +40,7 @@ def format_job_message(job: dict, score: dict | None = None) -> tuple[str, str]:
         gaps = list(score["penalties"].keys())
     if not gaps:
         # inferir gaps: tecnologias populares não presentes
-        popular = ["AWS", "Docker", "Kubernetes"]
+        popular = ["AWS", "Docker", "Kubernetes", "Python", "python", "fastapi", "FastAPI"]
         gaps = [p for p in popular if p not in (techs or [])][:2]
 
     subject = (
@@ -57,7 +57,11 @@ def format_job_message(job: dict, score: dict | None = None) -> tuple[str, str]:
     llm = None
     if score and score.get("llm"):
         llm = score["llm"]
-    elif score and isinstance(score.get("tech_breakdown"), dict) and score["tech_breakdown"].get("llm"):
+    elif (
+        score
+        and isinstance(score.get("tech_breakdown"), dict)
+        and score["tech_breakdown"].get("llm")
+    ):
         llm = score["tech_breakdown"]["llm"]
     elif job.get("score") and isinstance(job["score"], dict) and job["score"].get("llm"):
         llm = job["score"]["llm"]
@@ -114,7 +118,7 @@ def _format_br_date(value) -> str:
     if dt is None:
         return str(value)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     try:
         from pathlib import Path
 

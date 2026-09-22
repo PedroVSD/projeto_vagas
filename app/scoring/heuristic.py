@@ -59,15 +59,15 @@ TECH_SCORES: dict[str, int] = {
     "MLOps": 5,
     "Data Engineering": 5,
     "Cloud": 5,
-    "AWS": 4,
-    "GCP": 4,
-    "FastAPI": 4,
-    "SQL": 4,
-    "Kafka": 4,
-    "CI/CD": 4,
-    "Azure": 3,
-    "PostgreSQL": 3,
-    "Redis": 3,  # não listado mas útil
+    "AWS": 5,
+    "GCP": 5,
+    "FastAPI": 5,
+    "SQL": 5,
+    "Kafka": 5,
+    "CI/CD": 5,
+    "Azure": 5,
+    "PostgreSQL": 5,
+    "Redis": 5,
 }
 
 
