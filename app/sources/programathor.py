@@ -56,11 +56,29 @@ class ProgramathorSource(JobSource):
             for q in qs:
                 txt = q.get("query", "")
                 low = txt.lower()
-                if any(k in low for k in ["python", "data engineer", "junior", "estagio", "estágio", "backend", "mlops"]):
+                if any(
+                    k in low
+                    for k in [
+                        "python",
+                        "data engineer",
+                        "data scientist",
+                        "junior",
+                        "pleno",
+                        "golang",
+                        "go developer",
+                        "backend",
+                        "mlops",
+                    ]
+                ):
                     preferred.append(txt)
             return (preferred or [q["query"] for q in qs])[: self.max_queries]
         except Exception:
-            return ["python junior", "data engineer", "estagio python", "backend junior"][: self.max_queries]
+            return [
+                "python junior",
+                "pleno data engineer",
+                "golang junior",
+                "backend pleno",
+            ][: self.max_queries]
 
     def fetch_jobs(self) -> list[RawJob]:
         queries = self._get_queries()

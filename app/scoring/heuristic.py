@@ -9,11 +9,11 @@ import re
 
 # Pesos por senioridade (§6)
 SENIORITY_SCORES: dict[str, int] = {
-    "intern": 25,
+    "intern": 0,
     "junior": 25,
-    "entry_level": 20,
-    "trainee": 15,
-    "pleno": -20,
+    "entry_level": 0,
+    "trainee": 0,
+    "pleno": 20,
     "senior": -50,
     "staff": -80,
 }
@@ -29,6 +29,17 @@ AREA_KEYWORDS: dict[str, tuple[int, list[str]]] = {
     "software_engineering": (20, [r"\bsoftware engineer", r"\bsoftware engineering\b"]),
     "data_science": (20, [r"\bdata scientist\b", r"\bdata science\b", r"\bcientista de dados\b"]),
     "ai_engineering": (20, [r"\bai engineer\b", r"\bintelligence engineer\b"]),
+    "golang": (
+        20,
+        [
+            r"\bgolang\b",
+            r"\bgo developer\b",
+            r"\bgo engineer\b",
+            r"\bdesenvolvedor go\b",
+            r"\bdesarrollador go\b",
+            r"\bbackend go\b",
+        ],
+    ),
     "backend": (15, [r"\bbackend\b"]),
     "devops_platform": (15, [r"\bdevops\b", r"\bplatform engineer\b", r"\bplatform engineering\b"]),
     "analytics_engineering": (15, [r"\banalytics engineer\b"]),
@@ -37,10 +48,10 @@ AREA_KEYWORDS: dict[str, tuple[int, list[str]]] = {
 
 # Modalidade (§6)
 MODALITY_SCORES: dict[str, int] = {
-    "remoto_brasil": 25,
+    "remoto_brasil": 20,
     "remoto": 20,
-    "hibrido": 5,
-    "presencial": -10,
+    "hibrido": 10,
+    "presencial": -15,
 }
 
 # Tecnologias (§6) - valores individuais
@@ -126,32 +137,22 @@ def score_penalties(
     penalties: dict[str, int] = {}
     total = 0
 
-    # experiência incompatível: 5+ anos, 8 years etc.
-    if re.search(r"\b[5-9]\+?\s*(anos|years|year)\b", hay) or re.search(
+    # experiência incompatível com Júnior/Pleno: 8+ anos
+    if re.search(r"\b[8-9]\+?\s*(anos|years|year)\b", hay) or re.search(
         r"\b10\+?\s*(anos|years)\b", hay
     ):
-        penalties["experiencia_5_anos"] = -15
+        penalties["experiencia_8_anos"] = -15
         total -= 15
-    if re.search(r"\b(8|10)\+?\s*(anos|years)\b", hay):
-        penalties["experiencia_8_anos"] = -10
-        total -= 10
 
     # senior explícito já penalizado via seniority,
     # mas se título contiver senior sem seniority extraído
     if re.search(r"\bs[eê]nior\b", hay) and "senior" not in hay:
         pass  # já coberto
 
-    # presencial fora BR sem remoto
-    if (
-        modality == "presencial"
-        and location
-        and "brasil" not in location.lower()
-        and "brazil" not in location.lower()
-    ):
-        # se não for remoto, penaliza
-        if not re.search(r"\bremoto\b|\bremote\b", hay):
-            penalties["presencial_fora_br"] = -10
-            total -= 10
+    # perfil aceita apenas remoto ou híbrido
+    if modality == "presencial":
+        penalties["presencial"] = -15
+        total -= 15
 
     # não técnica: ex: vendas, marketing, rh predominante
     non_tech_keywords = [

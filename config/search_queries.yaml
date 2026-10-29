@@ -1,110 +1,126 @@
-# Fase 3 - Famílias de buscas configuráveis (editável sem mudar código)
-# Spec §5 + markdown/buscas_booleanas_vagas.md
-# Simple = queries literais; Boolean = sintaxe AND/OR/NOT p/ motores que suportam
-# search_profiles = estrutura canônica §11 (careers/seniority/locations) p/ geração dinâmica
-# Uso: query_service.get_all_queries() retorna simple+boolean; profiles ficam em data["search_profiles"]
+# Buscas configuráveis (editável sem mudar código)
+# Perfil atual: Júnior ou Pleno | remoto ou híbrido
+# Idiomas: Português, Inglês e Espanhol
+# Países: Chile, Argentina, Espanha, Portugal, Polônia, Estados Unidos e Canadá
+#
+# O direcionamento por país é feito pelos adapters de cada fonte
+# (Jobicy por geo, Get on Board LatAm, Landing.jobs Portugal, LinkedIn multi-país etc.).
+# Este arquivo concentra cargos, senioridade, idiomas e modalidades.
 
 simple:
-  - query: "MLOps Engineer"
+  # MLOps
+  - query: "Junior MLOps Engineer"
     family: "mlops"
-  - query: "Junior MLOps"
+  - query: "Pleno MLOps Engineer"
     family: "mlops"
-  - query: "Machine Learning Engineer"
-    family: "ml_engineering"
+
+  # Machine Learning / IA
   - query: "Junior Machine Learning Engineer"
     family: "ml_engineering"
-  - query: "ML Engineer"
+  - query: "Pleno Machine Learning Engineer"
     family: "ml_engineering"
-  - query: "Data Engineer"
-    family: "data_engineering"
+  - query: "Junior ML Engineer"
+    family: "ml_engineering"
+  - query: "Pleno ML Engineer"
+    family: "ml_engineering"
+  - query: "Junior AI Engineer"
+    family: "ml_engineering"
+  - query: "Pleno AI Engineer"
+    family: "ml_engineering"
+
+  # Engenharia de Dados
   - query: "Junior Data Engineer"
     family: "data_engineering"
-  - query: "Software Engineer Python"
-    family: "software_engineering"
-  - query: "Backend Engineer Python"
-    family: "software_engineering"
+  - query: "Pleno Data Engineer"
+    family: "data_engineering"
+
+  # Engenharia de Software
   - query: "Junior Software Engineer"
     family: "software_engineering"
-  - query: "Python Developer"
+  - query: "Pleno Software Engineer"
     family: "software_engineering"
-  - query: "Data Scientist"
-    family: "data_science"
+  - query: "Junior Python Developer"
+    family: "software_engineering"
+  - query: "Pleno Python Developer"
+    family: "software_engineering"
+  - query: "Junior Backend Engineer"
+    family: "software_engineering"
+  - query: "Pleno Backend Engineer"
+    family: "software_engineering"
+
+  # Ciência de Dados
   - query: "Junior Data Scientist"
     family: "data_science"
-  - query: "AI Engineer"
-    family: "ai_engineering"
-  - query: "ML Engineer Intern"
-    family: "intern"
-  - query: "Data Engineer Intern"
-    family: "intern"
-  - query: "Software Engineer Intern"
-    family: "intern"
+  - query: "Pleno Data Scientist"
+    family: "data_science"
 
-# booleanas genéricas (Fase 3 original, compatível Greenhouse/Lever)
+  # Golang
+  - query: "Junior Golang Developer"
+    family: "golang"
+  - query: "Pleno Golang Developer"
+    family: "golang"
+  - query: "Junior Go Engineer"
+    family: "golang"
+  - query: "Pleno Go Engineer"
+    family: "golang"
+  - query: "Junior Backend Golang"
+    family: "golang"
+  - query: "Pleno Backend Golang"
+    family: "golang"
+
+# Booleanas por área e idioma.
+# Senioridade: Júnior/Jr/Pleno (PT), Junior/Mid-Level/Intermediate (EN), Junior/Pleno/Semi Senior/SSR (ES).
+# Modalidade: remoto ou híbrido apenas.
 boolean:
-  - query: '("MLOps" OR "Machine Learning Operations") AND (Junior OR "Entry Level" OR Intern OR Internship)'
-    family: "mlops_boolean"
-  - query: '("Machine Learning Engineer" OR "ML Engineer") AND (Junior OR Intern OR "Entry Level")'
-    family: "ml_engineering_boolean"
-  - query: '("Data Engineer" OR "Data Engineering") AND (Junior OR Intern OR "Entry Level")'
-    family: "data_engineering_boolean"
-  - query: '("Software Engineer" OR "Backend Engineer" OR "Python Developer") AND (Python OR FastAPI OR Go OR Golang) AND (Junior OR Intern OR "Entry Level")'
-    family: "software_boolean"
+  # === Ciência de Dados ===
+  - query: '("Data Scientist" OR "Cientista de Dados" OR "Ciência de Dados") AND (Junior OR "Júnior" OR Jr OR Pleno) AND (Remoto OR "Home Office" OR Híbrido OR Remote OR Hybrid)'
+    family: "data_science_pt_boolean"
+  - query: '("Data Scientist" OR "Data Science") AND (Junior OR Jr OR "Mid Level" OR "Mid-Level" OR Intermediate) AND (Remote OR Hybrid OR "Work From Home")'
+    family: "data_science_en_boolean"
+  - query: '("Data Scientist" OR "Cientista de Datos" OR "Ciencia de Datos") AND (Junior OR "Júnior" OR Jr OR Pleno OR "Semi Senior" OR "Semi-Senior" OR SSR) AND (Remoto OR Teletrabajo OR "Trabajo Remoto" OR Híbrido OR Remote OR Hybrid)'
+    family: "data_science_es_boolean"
 
-  # === markdown/buscas_booleanas_vagas.md §1-5 - buscas completas com Remote + NOT Senior ===
-  # 1. Ciência de Dados
-  - query: '("Data Scientist" OR "Data Science" OR "Cientista de Dados" OR "Ciência de Dados") AND (Junior OR "Júnior" OR Jr OR Intern OR Internship OR Estágio OR Estagiário OR Trainee) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_science_br_boolean_base"
-  - query: '("Data Scientist" OR "Data Science" OR "Cientista de Dados" OR "Ciência de Dados") AND (Intern OR Internship OR Internships OR Estágio OR Estagiário OR Estagiária OR Becario OR Becaria OR Prácticas) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_science_br_boolean_intern"
-  - query: '("Data Scientist" OR "Data Science" OR "Cientista de Dados" OR "Ciência de Dados") AND (Junior OR "Júnior" OR Jr OR "Entry Level" OR "Early Career") AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_science_br_boolean_junior"
+  # === Engenharia de Dados ===
+  - query: '("Data Engineer" OR "Engenheiro de Dados" OR "Engenharia de Dados") AND (Junior OR "Júnior" OR Jr OR Pleno) AND (Remoto OR "Home Office" OR Híbrido OR Remote OR Hybrid)'
+    family: "data_engineering_pt_boolean"
+  - query: '("Data Engineer" OR "Data Engineering") AND (Junior OR Jr OR "Mid Level" OR "Mid-Level" OR Intermediate) AND (Remote OR Hybrid OR "Work From Home")'
+    family: "data_engineering_en_boolean"
+  - query: '("Data Engineer" OR "Ingeniero de Datos" OR "Ingeniería de Datos") AND (Junior OR "Júnior" OR Jr OR Pleno OR "Semi Senior" OR "Semi-Senior" OR SSR) AND (Remoto OR Teletrabajo OR "Trabajo Remoto" OR Híbrido OR Remote OR Hybrid)'
+    family: "data_engineering_es_boolean"
 
-  # 2. Engenharia de Dados
-  - query: '("Data Engineer" OR "Data Engineering" OR "Engenheiro de Dados" OR "Engenharia de Dados") AND (Junior OR "Júnior" OR Jr OR Intern OR Internship OR Estágio OR Estagiário OR Trainee) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_engineering_br_boolean_base"
-  - query: '("Data Engineer" OR "Data Engineering" OR "Engenheiro de Dados" OR "Engenharia de Dados") AND (Intern OR Internship OR Internships OR Estágio OR Estagiário OR Estagiária OR Becario OR Becaria OR Prácticas OR Co-op OR Coop) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_engineering_br_boolean_intern"
-  - query: '("Data Engineer" OR "Data Engineering" OR "Engenheiro de Dados" OR "Engenharia de Dados") AND (Junior OR "Júnior" OR Jr OR "Entry Level" OR "Early Career") AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_engineering_br_boolean_junior"
+  # === Engenharia de Software ===
+  - query: '("Software Engineer" OR "Engenheiro de Software" OR "Desenvolvedor de Software" OR "Backend Engineer" OR "Desenvolvedor Backend") AND (Junior OR "Júnior" OR Jr OR Pleno) AND (Remoto OR "Home Office" OR Híbrido OR Remote OR Hybrid)'
+    family: "software_engineering_pt_boolean"
+  - query: '("Software Engineer" OR "Software Developer" OR "Backend Engineer" OR "Backend Developer") AND (Junior OR Jr OR "Mid Level" OR "Mid-Level" OR Intermediate) AND (Remote OR Hybrid OR "Work From Home")'
+    family: "software_engineering_en_boolean"
+  - query: '("Software Engineer" OR "Ingeniero de Software" OR "Desarrollador de Software" OR "Backend Engineer" OR "Desarrollador Backend") AND (Junior OR "Júnior" OR Jr OR Pleno OR "Semi Senior" OR "Semi-Senior" OR SSR) AND (Remoto OR Teletrabajo OR "Trabajo Remoto" OR Híbrido OR Remote OR Hybrid)'
+    family: "software_engineering_es_boolean"
 
-  # 3. Engenharia de Software
-  - query: '("Software Engineer" OR "Software Developer" OR "Software Development" OR "Backend Engineer" OR "Backend Developer" OR "Engenheiro de Software" OR "Desenvolvedor de Software" OR "Engenheiro Backend" OR "Desenvolvedor Backend") AND (Junior OR "Júnior" OR Jr OR Intern OR Internship OR Estágio OR Estagiário OR Trainee) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "software_engineering_br_boolean_base"
-  - query: '("Software Engineer" OR "Software Developer" OR "Backend Engineer" OR "Backend Developer" OR "Engenheiro de Software" OR "Desenvolvedor de Software" OR "Engenheiro Backend" OR "Desenvolvedor Backend") AND (Intern OR Internship OR Internships OR Estágio OR Estagiário OR Estagiária OR Co-op OR Coop) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "software_engineering_br_boolean_intern"
-  - query: '("Software Engineer" OR "Software Developer" OR "Backend Engineer" OR "Backend Developer" OR "Engenheiro de Software" OR "Desenvolvedor de Software" OR "Engenheiro Backend" OR "Desenvolvedor Backend") AND (Junior OR "Júnior" OR Jr OR "Entry Level" OR "Early Career") AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "software_engineering_br_boolean_junior"
+  # === Machine Learning / IA ===
+  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "Engenheiro de Machine Learning" OR "Engenheiro de Aprendizado de Máquina" OR "AI Engineer") AND (Junior OR "Júnior" OR Jr OR Pleno) AND (Remoto OR "Home Office" OR Híbrido OR Remote OR Hybrid)'
+    family: "ml_engineering_pt_boolean"
+  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "AI Engineer" OR "Machine Learning Developer") AND (Junior OR Jr OR "Mid Level" OR "Mid-Level" OR Intermediate) AND (Remote OR Hybrid OR "Work From Home")'
+    family: "ml_engineering_en_boolean"
+  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "AI Engineer" OR "Ingeniero de Machine Learning" OR "Ingeniero de Aprendizaje Automático") AND (Junior OR "Júnior" OR Jr OR Pleno OR "Semi Senior" OR "Semi-Senior" OR SSR) AND (Remoto OR Teletrabajo OR "Trabajo Remoto" OR Híbrido OR Remote OR Hybrid)'
+    family: "ml_engineering_es_boolean"
 
-  # 4. Machine Learning Engineer
-  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "Machine Learning" OR "AI Engineer" OR "Machine Learning Developer" OR "Engenheiro de Machine Learning" OR "Engenheiro de Aprendizado de Máquina") AND (Junior OR "Júnior" OR Jr OR Intern OR Internship OR Estágio OR Estagiário OR Trainee) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "ml_engineering_br_boolean_base"
-  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "AI Engineer" OR "Machine Learning Developer" OR "Engenheiro de Machine Learning" OR "Engenheiro de Aprendizado de Máquina") AND (Intern OR Internship OR Internships OR Estágio OR Estagiário OR Estagiária OR Co-op OR Coop OR Prácticas) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "ml_engineering_br_boolean_intern"
-  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "AI Engineer" OR "Machine Learning Developer" OR "Engenheiro de Machine Learning" OR "Engenheiro de Aprendizado de Máquina") AND (Junior OR "Júnior" OR Jr OR "Entry Level" OR "Early Career") AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "ml_engineering_br_boolean_junior"
+  # === MLOps ===
+  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer") AND (Junior OR "Júnior" OR Jr OR Pleno) AND (Remoto OR "Home Office" OR Híbrido OR Remote OR Hybrid)'
+    family: "mlops_pt_boolean"
+  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer") AND (Junior OR Jr OR "Mid Level" OR "Mid-Level" OR Intermediate) AND (Remote OR Hybrid OR "Work From Home")'
+    family: "mlops_en_boolean"
+  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer") AND (Junior OR "Júnior" OR Jr OR Pleno OR "Semi Senior" OR "Semi-Senior" OR SSR) AND (Remoto OR Teletrabajo OR "Trabajo Remoto" OR Híbrido OR Remote OR Hybrid)'
+    family: "mlops_es_boolean"
 
-  # 5. MLOps
-  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer" OR "Machine Learning Platform") AND (Junior OR "Júnior" OR Jr OR Intern OR Internship OR Estágio OR Estagiário OR Trainee) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "mlops_br_boolean_base"
-  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer" OR "Machine Learning Platform") AND (Intern OR Internship OR Internships OR Estágio OR Estagiário OR Estagiária OR Co-op OR Coop) AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "mlops_br_boolean_intern"
-  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer" OR "Machine Learning Platform") AND (Junior OR "Júnior" OR Jr OR "Entry Level" OR "Early Career") AND (Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office") NOT (Senior OR "Sênior" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "mlops_br_boolean_junior"
+  # === Golang ===
+  - query: '(Golang OR "Go Developer" OR "Desenvolvedor Golang" OR "Desenvolvedor Go" OR "Engenheiro Golang") AND (Junior OR "Júnior" OR Jr OR Pleno) AND (Remoto OR "Home Office" OR Híbrido OR Remote OR Hybrid)'
+    family: "golang_pt_boolean"
+  - query: '(Golang OR "Go Developer" OR "Go Engineer" OR "Backend Golang" OR "Backend Go") AND (Junior OR Jr OR "Mid Level" OR "Mid-Level" OR Intermediate) AND (Remote OR Hybrid OR "Work From Home")'
+    family: "golang_en_boolean"
+  - query: '(Golang OR "Desarrollador Golang" OR "Desarrollador Go" OR "Ingeniero Golang" OR "Backend Golang") AND (Junior OR "Júnior" OR Jr OR Pleno OR "Semi Senior" OR "Semi-Senior" OR SSR) AND (Remoto OR Teletrabajo OR "Trabajo Remoto" OR Híbrido OR Remote OR Hybrid)'
+    family: "golang_es_boolean"
 
-  # 6. Canadá - vagas remotas (§6)
-  - query: '("Data Scientist" OR "Data Science" OR "Data Analyst" OR "Cientista de Dados") AND (Junior OR "Entry Level" OR "Early Career" OR Intern OR Internship OR Co-op OR Coop) AND (Remote OR "Fully Remote" OR "100% Remote" OR "Work From Home") NOT (Senior OR "Senior-Level" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_science_ca_boolean"
-  - query: '("Data Engineer" OR "Data Engineering") AND (Junior OR "Entry Level" OR "Early Career" OR Intern OR Internship OR Co-op OR Coop) AND (Remote OR "Fully Remote" OR "100% Remote" OR "Work From Home") NOT (Senior OR "Senior-Level" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "data_engineering_ca_boolean"
-  - query: '("Software Engineer" OR "Software Developer" OR "Backend Engineer" OR "Backend Developer") AND (Junior OR "Entry Level" OR "Early Career" OR Intern OR Internship OR Co-op OR Coop) AND (Remote OR "Fully Remote" OR "100% Remote" OR "Work From Home") NOT (Senior OR "Senior-Level" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "software_engineering_ca_boolean"
-  - query: '("Machine Learning Engineer" OR "ML Engineer" OR "AI Engineer" OR "Machine Learning Developer") AND (Junior OR "Entry Level" OR "Early Career" OR Intern OR Internship OR Co-op OR Coop) AND (Remote OR "Fully Remote" OR "100% Remote" OR "Work From Home") NOT (Senior OR "Senior-Level" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "ml_engineering_ca_boolean"
-  - query: '(MLOps OR "ML Ops" OR "Machine Learning Operations" OR "ML Platform Engineer" OR "Machine Learning Platform Engineer") AND (Junior OR "Entry Level" OR "Early Career" OR Intern OR Internship OR Co-op OR Coop) AND (Remote OR "Fully Remote" OR "100% Remote" OR "Work From Home") NOT (Senior OR "Senior-Level" OR Lead OR Principal OR Staff OR Manager OR Director)'
-    family: "mlops_ca_boolean"
-
-# === markdown/buscas_booleanas_vagas.md §7-11 - Search Profiles canônicos ===
+# Estrutura canônica do perfil de busca.
 search_profiles:
   careers:
     - data_science
@@ -112,36 +128,46 @@ search_profiles:
     - software_engineering
     - machine_learning_engineering
     - mlops
+    - golang
   seniority:
-    internship:
-      br: ["Estágio", "Estagiário", "Estagiária", "Intern", "Internship"]
-      us_ca: ["Intern", "Internship", "Internships", "Co-op", "Coop"]
-      eu: ["Intern", "Internship", "Estágio", "Estagiário", "Becario", "Becaria", "Prácticas"]
     junior:
-      - Junior
-      - "Júnior"
-      - Jr
-      - "Entry Level"
-      - "Early Career"
+      pt: ["Junior", "Júnior", "Jr"]
+      en: ["Junior", "Jr"]
+      es: ["Junior", "Júnior", "Jr"]
+    pleno:
+      pt: ["Pleno"]
+      en: ["Mid Level", "Mid-Level", "Intermediate"]
+      es: ["Pleno", "Semi Senior", "Semi-Senior", "SSR"]
+  languages: ["pt", "en", "es"]
+  modalities: ["remote", "hybrid"]
   locations:
-    brazil:
+    chile:
       remote: true
-      onsite: ["Rio de Janeiro"]
-      filters: 'Remote OR Remoto OR "Fully Remote" OR "100% Remote" OR "Work From Home" OR "Home Office"'
-    united_states:
-      remote: true
+      hybrid: true
       onsite: false
-    canada:
+    argentina:
       remote: true
-      onsite: false
-    portugal:
-      remote: true
+      hybrid: true
       onsite: false
     spain:
       remote: true
+      hybrid: true
       onsite: false
-    europe:
+    portugal:
       remote: true
+      hybrid: true
+      onsite: false
+    poland:
+      remote: true
+      hybrid: true
+      onsite: false
+    united_states:
+      remote: true
+      hybrid: true
+      onsite: false
+    canada:
+      remote: true
+      hybrid: true
       onsite: false
   technologies_ranking:
     - Python
@@ -182,7 +208,7 @@ display:
   locale: "pt_BR"
 
 # throttling - controle de rate limit (editável sem mudar código, sem precisar .env)
-# LLM 5min e Telegram 1min conforme solicitado. Os tempos estão em segundos
+# Os tempos estão em segundos
 throttling:
   llm_throttle_seconds: 20
   telegram_throttle_seconds: 10

@@ -33,3 +33,9 @@ Thumbs.db
 
 # Docker volumes
 pgdata/
+
+# Configurações
+config/search_queries.yaml
+
+# Documentação local (não versionada)
+README.full.md

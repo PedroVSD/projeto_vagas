@@ -16,7 +16,7 @@ def test_junior_data_engineer_excelente():
     assert res["classification"] == "excelente"
 
 
-def test_estagio_mlops_muito_relevante():
+def test_estagio_fora_do_perfil():
     job = {
         "title": "Estágio MLOps",
         "description": "Python Docker Kubernetes MLflow AWS remoto",
@@ -25,9 +25,7 @@ def test_estagio_mlops_muito_relevante():
         "seniority": "intern",
         "technologies": ["Python", "Docker", "Kubernetes", "MLflow", "AWS"],
     }
-    res = score_job(job)
-    assert res["final_score"] >= 75
-    assert res["classification"] in ("excelente", "muito_relevante")
+    assert is_relevant(job)[0] is False
 
 
 def test_senior_ignorar():
@@ -98,3 +96,29 @@ def test_is_relevant_filter():
         )[0]
         is False
     )
+
+
+def test_filter_apenas_junior_pleno():
+    assert is_relevant({"title": "Pleno Data Engineer", "seniority": "pleno"})[0] is True
+    assert is_relevant({"title": "Estágio Data Engineer", "seniority": "intern"})[0] is False
+    assert is_relevant({"title": "Senior Data Engineer", "seniority": "senior"})[0] is False
+    assert is_relevant({"title": "Staff Engineer", "seniority": "staff"})[0] is False
+
+
+def test_filter_apenas_remoto_ou_hibrido():
+    assert is_relevant({"title": "Pleno Python", "modality": "remoto"})[0] is True
+    assert is_relevant({"title": "Pleno Python", "modality": "hibrido"})[0] is True
+    assert is_relevant({"title": "Pleno Python", "modality": "presencial"})[0] is False
+
+
+def test_pleno_score_relevante():
+    job = {
+        "title": "Pleno Data Engineer",
+        "description": "Python, SQL, Docker - remoto",
+        "location": "Chile",
+        "modality": "remoto",
+        "seniority": "pleno",
+        "technologies": ["Python", "SQL", "Docker"],
+    }
+    res = score_job(job)
+    assert res["final_score"] >= 70

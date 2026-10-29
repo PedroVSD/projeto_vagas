@@ -29,9 +29,20 @@ def test_demo_fingerprint_dedup():
 
 
 def test_registry():
-    # demo removido do DEFAULT_SOURCES (mock só p/ testes unitários, não produção)
-    assert get_source_by_name("arbeitnow") is not None
+    # fontes-alvo atuais
+    for name in (
+        "linkedin",
+        "greenhouse",
+        "jobicy",
+        "getonbrd",
+        "remoteok",
+        "weworkremotely",
+        "landingjobs",
+    ):
+        assert get_source_by_name(name) is not None
+    # fontes Brasil continuam disponíveis para uso manual
     assert get_source_by_name("gupy") is not None
+    assert get_source_by_name("arbeitnow") is not None
     assert get_source_by_name("inexistente") is None
     # DemoSource ainda importável mas não no registry padrão
     from app.sources.demo import DemoSource
@@ -72,3 +83,42 @@ def test_arbeitnow_fetch_failure_returns_empty():
     with patch("app.sources.arbeitnow.httpx.Client", side_effect=Exception("network error")):
         raws = src.fetch_jobs()
         assert raws == []
+
+
+def test_jobicy_normalize_pleno_remoto():
+    from app.sources.base import RawJob
+    from app.sources.jobicy import JobicySource
+
+    raw = RawJob(
+        external_id="1",
+        title="Pleno Data Engineer",
+        company_name="Acme",
+        url="https://jobicy.com/jobs/1",
+        description="Python, SQL, Docker e Golang. Remoto.",
+        location="Chile",
+        raw_payload={},
+    )
+    norm = JobicySource().normalize_job(raw)
+    assert norm.seniority == "pleno"
+    assert norm.modality in ("remoto", "remoto_brasil")
+    assert "Python" in (norm.technologies or [])
+    assert norm.fingerprint is not None
+
+
+def test_remoteok_normalize_junior_golang():
+    from app.sources.base import RawJob
+    from app.sources.remoteok import RemoteOkSource
+
+    raw = RawJob(
+        external_id="2",
+        title="Junior Go Engineer",
+        company_name="Acme",
+        url="https://remoteok.com/jobs/2",
+        description="Golang, Docker, remote",
+        location="Remote",
+        raw_payload={"tags": ["golang", "docker"]},
+    )
+    norm = RemoteOkSource().normalize_job(raw)
+    assert norm.seniority == "junior"
+    assert norm.modality == "remoto"
+    assert "Go" in (norm.technologies or [])

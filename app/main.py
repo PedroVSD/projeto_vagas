@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes.health import router as health_router
 from app.api.routes.jobs import router as jobs_router
@@ -84,6 +85,9 @@ def root():
 # Frontend simples (vanilla HTML/JS) — sem dependência extra (aiofiles)
 _STATIC_DIR = Path(__file__).parent / "static"
 _INDEX = _STATIC_DIR / "index.html"
+
+if _STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
 
 @app.get("/ui", tags=["frontend"], include_in_schema=False)

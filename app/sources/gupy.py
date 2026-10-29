@@ -69,13 +69,14 @@ class GupySource(JobSource):
                 if any(
                     k in low
                     for k in [
-                        "estagio",
-                        "estágio",
                         "junior",
-                        "trainee",
-                        "intern",
+                        "pleno",
+                        "golang",
+                        "go developer",
+                        "go engineer",
                         "python",
                         "data engineer",
+                        "data scientist",
                         "mlops",
                         "software",
                     ]
@@ -83,9 +84,12 @@ class GupySource(JobSource):
                     preferred.append(txt)
             return (preferred or [q["query"] for q in qs])[: self.max_queries]
         except Exception:
-            return ["estagio python", "junior data engineer", "estagio dados", "junior python"][
-                : self.max_queries
-            ]
+            return [
+                "junior python",
+                "pleno data engineer",
+                "junior golang",
+                "pleno backend",
+            ][: self.max_queries]
 
     def fetch_jobs(self) -> list[RawJob]:
         queries = self._get_queries()

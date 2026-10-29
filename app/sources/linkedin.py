@@ -13,7 +13,8 @@ Usa endpoint público de vagas para visitantes não logados:
   (ingestão isola por fonte em app/services/ingestion.py:172).
 
 Perfil alvo: Estágio/Júnior em MLOps, Engenharia de Software/Dados, Data Science
-  -> filtra por f_E=1,2 (Internship + Entry level) + location=Brazil quando possível.
+  -> filtra por f_E=2,3 (Entry level + Associate) e f_WT=2,3 (Remote + Hybrid),
+     alternando entre os países-alvo (Chile, Argentina, Espanha, Portugal, Polônia, EUA, Canadá).
 
 Alternativa futura: trocar por API agregadora (JobsPipe, ReefAPI) via ENV se escalar.
 """
@@ -49,11 +50,19 @@ DEFAULT_HEADERS = {
 }
 
 # Filtros LinkedIn (guest API)
-# f_E=1 (Internship), 2 (Entry level) -> nosso perfil
-# f_JT=F (Full-time), I (Internship)
-# f_WT=2 (Remote) quando quisermos remoto
-EXPERIENCE_FILTER = "1,2"
-LOCATION_BRAZIL = "Brazil"
+# f_E=2 (Entry level), 3 (Associate) -> Júnior/Pleno
+# f_WT=2 (Remote), 3 (Hybrid)
+EXPERIENCE_FILTER = "2,3"
+WORKPLACE_FILTER = "2,3"
+DEFAULT_LOCATIONS = [
+    "Chile",
+    "Argentina",
+    "Spain",
+    "Portugal",
+    "Poland",
+    "United States",
+    "Canada",
+]
 
 
 class LinkedinSource(JobSource):
@@ -65,56 +74,88 @@ class LinkedinSource(JobSource):
         self,
         timeout: int = 15,
         max_per_query: int = 10,
-        max_queries: int = 5,
-        location: str = LOCATION_BRAZIL,
+        max_queries: int = 7,
+        location: str | None = None,
+        locations: list[str] | None = None,
     ):
         self.timeout = timeout
         self.max_per_query = max_per_query
         self.max_queries = max_queries
-        self.location = location
+        if locations:
+            self.locations = locations
+        elif location:
+            self.locations = [location]
+        else:
+            self.locations = DEFAULT_LOCATIONS
 
     def _get_queries(self) -> list[str]:
         try:
             from app.services.query_service import get_all_queries
 
             qs = get_all_queries()
-            # prioriza simple (mais específicas) e limita
+            # prioriza simple (mais específicas) e equilibra por família,
+            # garantindo cobertura de todas as áreas (incluindo Golang).
             simple = [
-                q["query"]
+                q
                 for q in qs
                 if "simple" in q.get("family", "")
                 or q.get("family")
-                in {"mlops", "software_engineering", "data_engineering", "data_science", "intern"}
+                in {
+                    "mlops",
+                    "software_engineering",
+                    "data_engineering",
+                    "data_science",
+                    "ml_engineering",
+                    "golang",
+                }
             ]
             if not simple:
-                simple = [q["query"] for q in qs[: self.max_queries]]
-            # filtra apenas queries com boa aderência Júnior/Estágio
+                simple = qs[: self.max_queries]
+
+            by_family: dict[str, list[str]] = {}
+            for q in simple:
+                by_family.setdefault(q.get("family", "outros"), []).append(q["query"])
+
+            balanced: list[str] = []
+            while len(balanced) < self.max_queries:
+                added = False
+                for items in by_family.values():
+                    if items:
+                        balanced.append(items.pop(0))
+                        added = True
+                        if len(balanced) >= self.max_queries:
+                            break
+                if not added:
+                    break
+
+            # filtra apenas queries com boa aderência Júnior/Pleno + Golang
             filtered = [
                 q
-                for q in simple
+                for q in balanced
                 if any(
                     k in q.lower()
                     for k in [
                         "junior",
-                        "estágio",
-                        "estagio",
-                        "intern",
-                        "trainee",
-                        "entry",
+                        "pleno",
+                        "golang",
+                        "go engineer",
+                        "go developer",
                         "python",
                         "data engineer",
                         "mlops",
                     ]
                 )
             ]
-            return (filtered or simple)[: self.max_queries]
+            return filtered or balanced
         except Exception:
             return [
                 "Junior Data Engineer",
-                "Estágio MLOps",
+                "Pleno Data Engineer",
                 "Junior Python Developer",
-                "Data Scientist Intern",
+                "Junior Golang Developer",
+                "Pleno Golang Developer",
                 "Junior Machine Learning Engineer",
+                "Pleno Data Scientist",
             ][: self.max_queries]
 
     def fetch_jobs(self) -> list[RawJob]:
@@ -122,9 +163,10 @@ class LinkedinSource(JobSource):
         all_raws: list[RawJob] = []
         seen_urls: set[str] = set()
 
-        for q in queries:
+        for idx, q in enumerate(queries):
+            location = self.locations[idx % len(self.locations)]
             try:
-                raws = self._fetch_for_query(q)
+                raws = self._fetch_for_query(q, location)
                 for r in raws:
                     if r.url not in seen_urls:
                         seen_urls.add(r.url)
@@ -134,7 +176,7 @@ class LinkedinSource(JobSource):
                 # backoff leve entre queries para respeitar rate limit
                 time.sleep(0.8)
             except Exception as e:
-                logger.warning("LinkedIn fetch falhou query='%s': %s", q, e)
+                logger.warning("LinkedIn fetch falhou query='%s' location='%s': %s", q, location, e)
                 continue
             if len(all_raws) >= self.max_per_query * self.max_queries:
                 break
@@ -142,11 +184,13 @@ class LinkedinSource(JobSource):
         logger.info("LinkedIn fetch: %d vagas (queries=%d)", len(all_raws), len(queries))
         return all_raws
 
-    def _fetch_for_query(self, query: str) -> list[RawJob]:
+    def _fetch_for_query(self, query: str, location: str | None = None) -> list[RawJob]:
+        location = location or self.locations[0]
         params = {
             "keywords": query,
-            "location": self.location,
+            "location": location,
             "f_E": EXPERIENCE_FILTER,
+            "f_WT": WORKPLACE_FILTER,
             "trk": "public_jobs_jobs-search-bar_search-submit",
             "start": 0,
         }
@@ -174,9 +218,11 @@ class LinkedinSource(JobSource):
             )
             return []
 
-        return self._parse_search_html(html, query)
+        return self._parse_search_html(html, query, location)
 
-    def _parse_search_html(self, html: str, query: str) -> list[RawJob]:
+    def _parse_search_html(
+        self, html: str, query: str, location: str | None = None
+    ) -> list[RawJob]:
         soup = BeautifulSoup(html, "lxml")
         # LinkedIn guest retorna <li><div class="base-card">...</div></li>
         cards = soup.select("li div.base-card, div.job-search-card, div.base-card")
@@ -214,7 +260,11 @@ class LinkedinSource(JobSource):
                 loc_el = card.select_one(
                     ".job-search-card__location, .base-search-card__metadata span"
                 )
-                location = loc_el.get_text(strip=True) if loc_el else self.location
+                card_location = (
+                    loc_el.get_text(strip=True)
+                    if loc_el
+                    else (location or self.locations[0])
+                )
 
                 # tenta buscar descrição resumida embutida
                 desc = None
@@ -231,7 +281,7 @@ class LinkedinSource(JobSource):
                         company_name=company,
                         url=url,
                         description=desc,
-                        location=location,
+                        location=card_location,
                         raw_payload={"query": query, "job_id": job_id, "linkedin_url": url},
                     )
                 )

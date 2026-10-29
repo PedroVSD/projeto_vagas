@@ -17,6 +17,13 @@ def test_extract_seniority_junior():
     assert extract_seniority("Senior Data Engineer", "") == "senior"
 
 
+def test_extract_seniority_espanhol():
+    assert extract_seniority("Desarrollador Junior Golang", "") == "junior"
+    assert extract_seniority("Ingeniero de Datos Semi Senior", "") == "pleno"
+    assert extract_seniority("Desarrollador Pleno", "") == "pleno"
+    assert extract_seniority("Pasantía Data Science", "") == "intern"
+
+
 def test_extract_seniority_none():
     assert extract_seniority("Data Engineer", "Experiência com Python") is None
 
@@ -27,3 +34,10 @@ def test_extract_modality():
     assert extract_modality("Híbrido - São Paulo", "") == "hibrido"
     assert extract_modality("Presencial - São Paulo", "") == "presencial"
     assert extract_modality(None, "100% remoto") == "remoto"
+
+
+def test_extract_modality_espanhol():
+    assert extract_modality("Chile - Remoto", "") == "remoto_brasil"
+    assert extract_modality(None, "Trabajo remoto") == "remoto"
+    assert extract_modality("Modalidad híbrida", "") == "hibrido"
+    assert extract_modality("Teletrabajo", "") == "remoto"

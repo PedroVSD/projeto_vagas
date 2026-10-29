@@ -63,7 +63,7 @@ class VagasSource(JobSource):
             from app.services.query_service import get_all_queries
 
             qs = get_all_queries()
-            # seleciona queries mais aderentes ao perfil BR estágio/júnior + python/dados
+            # seleciona queries mais aderentes ao perfil Júnior/Pleno + python/dados/Golang
             preferred = []
             for q in qs:
                 txt = q.get("query", "")
@@ -71,22 +71,26 @@ class VagasSource(JobSource):
                 if any(
                     k in low
                     for k in [
-                        "estagio",
-                        "estágio",
                         "junior",
-                        "trainee",
-                        "intern",
+                        "pleno",
+                        "golang",
+                        "go developer",
+                        "go engineer",
                         "python",
                         "data engineer",
+                        "data scientist",
                         "desenvolvedor",
                     ]
                 ):
                     preferred.append(txt)
             return (preferred or [q["query"] for q in qs])[: self.max_queries]
         except Exception:
-            return ["estagio python", "junior data engineer", "junior python", "estagio dados"][
-                : self.max_queries
-            ]
+            return [
+                "junior python",
+                "pleno data engineer",
+                "junior golang",
+                "pleno backend",
+            ][: self.max_queries]
 
     def fetch_jobs(self) -> list[RawJob]:
         queries = self._get_queries()
